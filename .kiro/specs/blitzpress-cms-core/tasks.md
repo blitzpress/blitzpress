@@ -347,24 +347,24 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Use sleep-based keep-alive pattern (no persistent binary)
     - _Requirements: 14.3, 14.5_
 
-- [ ] 22. Implement manager CLI (`manager/`)
-  - [ ] 22.1 Create manager CLI structure
+- [x] 22. Implement manager CLI (`manager/`)
+  - [x] 22.1 Create manager CLI structure
     - Create `manager/go.mod` with CLI framework dependency (e.g., cobra)
     - Create `manager/main.go` with CLI entry point
     - _Requirements: 16.1_
 
-  - [ ] 22.2 Implement list command
+  - [x] 22.2 Implement list command
     - Implement `list` command to scan `build/plugins/` and display plugin info
     - Read each `plugin.json` and show ID, name, version, status in table format
     - _Requirements: 16.2_
 
-  - [ ] 22.3 Implement build command
+  - [x] 22.3 Implement build command
     - Implement `build` command accepting plugin source directory path
     - Execute same build steps as `scripts/build-plugin.sh`
     - Exit with error if directory or `plugin.json` missing
     - _Requirements: 16.3, 16.4_
 
-  - [ ] 22.4 Write unit tests for manager CLI
+  - [x] 22.4 Write unit tests for manager CLI
     - Test list command output
     - Test build command validation
     - _Requirements: 16.2, 16.3, 16.4_
