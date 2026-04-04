@@ -128,6 +128,8 @@ Each module references `plugin-sdk` via the workspace (no replace directives nee
 | Frontend Build | Vite | Bundling, HMR |
 | Frontend Package Manager | bun or pnpm | Dependency management |
 | Hot Reload | cosmtrek/air | Go file watching + rebuild |
+| Datetime | dromara/carbon v2 | Developer-friendly datetime (replaces time.Time) |
+| UUID | google/uuid v1.6+ | UUID v7 primary keys |
 | Embedded Assets | Go `embed` package | Static files in binary |
 
 ---
@@ -582,17 +584,37 @@ func Initialize(cfg *config.Config) (*gorm.DB, error) {
 }
 ```
 
+### UUID v7 Primary Keys
+
+All database models (core and plugin) use UUID v7 instead of auto-incrementing integers. The SDK exports `pluginsdk.BaseModel` which replaces `gorm.Model`:
+
+```go
+type BaseModel struct {
+    ID        uuid.UUID       `gorm:"type:char(36);primaryKey"`
+    CreatedAt carbon.DateTime `gorm:"autoCreateTime"`
+    UpdatedAt carbon.DateTime `gorm:"autoUpdateTime"`
+    DeletedAt gorm.DeletedAt  `gorm:"index"`
+}
+```
+
+Libraries:
+- `github.com/google/uuid` v1.6+ for `uuid.NewV7()` (RFC 9562, time-ordered)
+- `github.com/dromara/carbon/v2` for `carbon.DateTime` -- GORM-compatible, replaces `time.Time` everywhere
+
 ### Core Models (minimum)
+
+All embed `pluginsdk.BaseModel` (not `gorm.Model`):
 
 - `User` - authentication, roles
 - `Post` / `Content` - core CMS content type
 - `Setting` - key-value settings store
 - `PluginState` - tracks installed/enabled/disabled plugins
+- `PluginSetting` - per-plugin key-value settings
 
 ### Plugin Database Access
 
 Plugins receive `*gorm.DB` through the registrar and can:
-- Define their own models
+- Define their own models (must embed `pluginsdk.BaseModel`)
 - Run their own AutoMigrate in `Register()`
 - Query/mutate their own tables
 
@@ -890,6 +912,7 @@ The custom component receives the current settings values and a save function as
 | `color` | Color picker | `string` |
 | `url` | URL input | `string` |
 | `email` | Email input | `string` |
+| `custom` | Plugin-registered SolidJS component (looked up by `Component` field ID from frontend registry) | `any` |
 
 ---
 

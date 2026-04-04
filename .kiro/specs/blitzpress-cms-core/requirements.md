@@ -135,9 +135,10 @@ BlitzPress is a high-performance, plugin-driven CMS built in Go with a SolidJS f
 #### Acceptance Criteria
 
 1. The core SHALL initialize a GORM database connection supporting SQLite (development) and PostgreSQL (production) drivers.
-2. WHEN the core starts THEN it SHALL run `AutoMigrate` for core models: `User`, `Setting`, and `PluginState` at minimum.
+2. WHEN the core starts THEN it SHALL run `AutoMigrate` for core models: `User`, `Setting`, `PluginState`, and `PluginSetting` at minimum.
 3. Plugins SHALL receive `*gorm.DB` through the `Registrar` and MAY define their own models and run their own `AutoMigrate` during `Register()`.
 4. Plugins SHOULD prefix their database table names with their plugin ID (e.g., `example_plugin_items`) to avoid collisions.
+4a. All core and plugin models SHALL embed `pluginsdk.BaseModel` (UUID v7 primary key) instead of `gorm.Model` (see Requirement 17).
 5. The `PluginState` model SHALL track plugin `id`, enabled/disabled status, and installed version for each plugin.
 
 ---
@@ -181,7 +182,8 @@ BlitzPress is a high-performance, plugin-driven CMS built in Go with a SolidJS f
 1. The `SettingsRegistry` interface SHALL expose `Register(schema SettingsSchema)` for plugins to declare their settings schema during `Register()`.
 2. The `SettingsSchema` SHALL support `Sections`, each containing an `ID`, `Title`, and array of `SettingsField` entries.
 3. Each `SettingsField` SHALL have `ID`, `Type`, `Label`, and `Default`, with optional `Description`, `Required`, `Min`, `Max`, and `Options` (for select fields).
-4. Supported field types SHALL include: `string`, `text`, `number`, `boolean`, `select`, `color`, `url`, `email`.
+4. Supported field types SHALL include: `string`, `text`, `number`, `boolean`, `select`, `color`, `url`, `email`, and `custom`.
+4a. IF a field has `Type: "custom"` THEN it SHALL include a `Component` string referencing a frontend component registered via `registrar.settings.addFieldComponent(id, component)`. The auto-generated form SHALL look up this component by ID and render it inline, passing `value` and `onChange` props.
 5. The core SHALL expose `GET /api/admin/plugins/{id}/settings` returning the schema and current saved values, and `PUT /api/admin/plugins/{id}/settings` for saving (with schema validation).
 6. Settings SHALL be stored in a `plugin_settings` table with columns `plugin_id`, `key`, and `value_json`.
 7. Plugins SHALL read their saved settings via `r.Config.Get(key)`, `r.Config.GetInt(key)`, etc. on the `ConfigReader` interface.
@@ -232,6 +234,22 @@ BlitzPress is a high-performance, plugin-driven CMS built in Go with a SolidJS f
 4. The `Register()` method SHALL demonstrate: registering at least one API route via `r.HTTP.API()`, serving embedded static files via `r.HTTP.Static()`, adding an action hook via `r.Hooks.AddAction()`, and adding a filter hook via `r.Hooks.AddFilter()`.
 5. The plugin frontend SHALL demonstrate calling `registerPlugin()` from `@blitzpress/plugin-sdk`, registering at least one page via `registrar.pages.add()`, and adding a frontend filter hook.
 6. The `plugin.json` SHALL include all required fields (`schema_version`, `id`, `name`, `version`, `sdk_version`) plus `has_frontend: true` with `frontend_entry` and `frontend_style`.
+
+---
+
+### Requirement 17: UUID v7 Primary Keys and Carbon Datetime
+
+**User Story:** As a developer, I want all database models (core and plugin) to use UUID v7 as primary keys and Carbon datetime fields instead of auto-incrementing integers and `time.Time`, so that IDs are globally unique and datetime handling is developer-friendly throughout the codebase.
+
+#### Acceptance Criteria
+
+1. The `plugin-sdk` module SHALL export a `BaseModel` struct that uses `uuid.UUID` (from `github.com/google/uuid`) as the primary key field, along with `CreatedAt`, `UpdatedAt` (both `carbon.DateTime`), and `DeletedAt` (`gorm.DeletedAt`) fields.
+2. The `BaseModel.BeforeCreate` GORM hook SHALL auto-generate a UUID v7 (RFC 9562, time-ordered) when the ID is not already set.
+3. All core database models (`User`, `Setting`, `PluginState`, `PluginSetting`) SHALL embed `pluginsdk.BaseModel` instead of `gorm.Model`.
+4. Plugin authors SHALL embed `pluginsdk.BaseModel` in their own models instead of `gorm.Model`.
+5. The UUID column type SHALL be `char(36)` for SQLite/PostgreSQL compatibility.
+6. All datetime fields across the entire codebase (models, event structs, API responses) SHALL use `carbon.DateTime` from `github.com/dromara/carbon/v2` instead of `time.Time`.
+7. The `carbon.DateTime` type SHALL be used because it implements `database/sql` `Scanner`/`Valuer` interfaces (GORM-compatible) and provides a rich datetime API (formatting, diffing, comparison, timezone handling).
 
 ---
 
