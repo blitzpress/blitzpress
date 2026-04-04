@@ -1,0 +1,331 @@
+package plugins
+
+import (
+	"errors"
+	"io"
+	"io/fs"
+	"log/slog"
+	"net/http"
+	"sort"
+	"strings"
+	"sync"
+
+	"github.com/gofiber/fiber/v2"
+	fiberfs "github.com/gofiber/fiber/v2/middleware/filesystem"
+
+	pluginsdk "github.com/BlitzPress/BlitzPress/plugin-sdk"
+	"gorm.io/gorm"
+)
+
+type PluginRegistry struct {
+	plugins map[string]*LoadedPlugin
+	hooks   *HookEngine
+	events  *EventBusImpl
+	mu      sync.RWMutex
+	logger  *slog.Logger
+	db      *gorm.DB
+}
+
+func NewPluginRegistry(db *gorm.DB, logger *slog.Logger) *PluginRegistry {
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
+
+	events := NewEventBus(logger, 0, 0)
+	events.Start()
+
+	return &PluginRegistry{
+		plugins: make(map[string]*LoadedPlugin),
+		hooks:   NewHookEngine(),
+		events:  events,
+		logger:  logger,
+		db:      db,
+	}
+}
+
+func (r *PluginRegistry) Hooks() *HookEngine {
+	return r.hooks
+}
+
+func (r *PluginRegistry) EventBus() *EventBusImpl {
+	return r.events
+}
+
+func (r *PluginRegistry) DiscoverAndLoad(pluginsDir string) error {
+	discovered, discoveryErrors := Discover(pluginsDir)
+	var errs []error
+
+	for _, err := range discoveryErrors {
+		r.logger.Error("plugin discovery failed", "error", err)
+		errs = append(errs, err)
+	}
+
+	for _, dp := range discovered {
+		loaded, err := LoadPlugin(dp)
+		if err != nil {
+			r.logger.Error("plugin load failed", "plugin_id", dp.ManifestFile.ID, "error", err)
+			r.storePlugin(fallbackLoadedPlugin(loaded, dp, err))
+			errs = append(errs, err)
+			continue
+		}
+
+		httpRegistry := newPluginHTTPRegistry(loaded.Manifest.ID)
+		settingsRegistry := newPluginSettingsRegistry(loaded.Manifest.ID)
+		configReader := newPluginConfigReader(loaded.Manifest.ID, r.db)
+		registrar := &pluginsdk.Registrar{
+			Hooks:    newScopedHookRegistry(loaded.Manifest.ID, r.hooks),
+			HTTP:     httpRegistry,
+			Events:   newScopedEventBus(loaded.Manifest.ID, r.events),
+			DB:       r.db,
+			Settings: settingsRegistry,
+			Logger:   slogLoggerAdapter{logger: r.logger.With("plugin_id", loaded.Manifest.ID)},
+			Config:   configReader,
+		}
+
+		if err := loaded.Instance.Register(registrar); err != nil {
+			err = errors.Join(pluginsdk.ErrRegistrationFailed, err)
+			loaded.Status = "error"
+			loaded.Errors = append(loaded.Errors, err)
+			r.logger.Error("plugin registration failed", "plugin_id", loaded.Manifest.ID, "error", err)
+			r.storePlugin(loaded)
+			errs = append(errs, err)
+			continue
+		}
+
+		loaded.Routes = append([]registeredRoute(nil), httpRegistry.routes...)
+		loaded.Statics = append([]registeredStatic(nil), httpRegistry.statics...)
+		if settingsRegistry.schema != nil {
+			schema := cloneSettingsSchema(*settingsRegistry.schema)
+			loaded.SettingsSchema = &schema
+		}
+
+		r.storePlugin(loaded)
+
+		if err := r.hooks.DoAction(&pluginsdk.HookContext{PluginID: loaded.Manifest.ID}, "plugin.loaded", loaded); err != nil {
+			r.logger.Error("plugin.loaded hook failed", "plugin_id", loaded.Manifest.ID, "error", err)
+			errs = append(errs, err)
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+func (r *PluginRegistry) GetPlugin(id string) (*LoadedPlugin, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	plugin, ok := r.plugins[id]
+	return plugin, ok
+}
+
+func (r *PluginRegistry) ListPlugins() []*LoadedPlugin {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	plugins := make([]*LoadedPlugin, 0, len(r.plugins))
+	for _, plugin := range r.plugins {
+		plugins = append(plugins, plugin)
+	}
+
+	sort.Slice(plugins, func(i, j int) bool {
+		leftID := plugins[i].Manifest.ID
+		if leftID == "" {
+			leftID = plugins[i].ManifestFile.ID
+		}
+
+		rightID := plugins[j].Manifest.ID
+		if rightID == "" {
+			rightID = plugins[j].ManifestFile.ID
+		}
+
+		return leftID < rightID
+	})
+
+	return plugins
+}
+
+func (r *PluginRegistry) MountRoutes(api fiber.Router, root fiber.Router) {
+	for _, plugin := range r.ListPlugins() {
+		if plugin.Status != "loaded" {
+			continue
+		}
+
+		pluginAPI := api.Group("/plugins/" + plugin.Manifest.ID)
+		for _, route := range plugin.Routes {
+			if route.register != nil {
+				route.register(pluginAPI)
+			}
+		}
+
+		if len(plugin.Statics) == 0 {
+			continue
+		}
+
+		pluginStatic := root.Group("/plugins/" + plugin.Manifest.ID + "/assets")
+		for _, static := range plugin.Statics {
+			mountFS, err := staticSubFS(static)
+			if err != nil {
+				r.logger.Warn("plugin static mount skipped", "plugin_id", plugin.Manifest.ID, "error", err)
+				continue
+			}
+
+			pluginStatic.Use("/", fiberfs.New(fiberfs.Config{
+				Root: http.FS(mountFS),
+			}))
+		}
+	}
+}
+
+func (r *PluginRegistry) storePlugin(plugin *LoadedPlugin) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	id := plugin.Manifest.ID
+	if id == "" {
+		id = plugin.ManifestFile.ID
+	}
+
+	r.plugins[id] = plugin
+}
+
+func fallbackLoadedPlugin(loaded *LoadedPlugin, dp DiscoveredPlugin, err error) *LoadedPlugin {
+	if loaded != nil {
+		if loaded.Status == "" {
+			loaded.Status = "error"
+		}
+		if len(loaded.Errors) == 0 {
+			loaded.Errors = []error{err}
+		}
+
+		return loaded
+	}
+
+	return &LoadedPlugin{
+		ManifestFile: dp.ManifestFile,
+		Path:         dp.Dir,
+		Status:       "error",
+		Errors:       []error{err},
+	}
+}
+
+func staticSubFS(static registeredStatic) (fs.FS, error) {
+	if static.stripPrefix == "." {
+		return static.filesystem, nil
+	}
+
+	return fs.Sub(static.filesystem, static.stripPrefix)
+}
+
+type scopedHookRegistry struct {
+	pluginID string
+	engine   *HookEngine
+}
+
+func newScopedHookRegistry(pluginID string, engine *HookEngine) pluginsdk.HookRegistry {
+	return &scopedHookRegistry{
+		pluginID: strings.TrimSpace(pluginID),
+		engine:   engine,
+	}
+}
+
+func (r *scopedHookRegistry) AddAction(name string, fn pluginsdk.ActionFunc, opts ...pluginsdk.HookOptions) pluginsdk.HookID {
+	return r.engine.AddAction(name, r.wrapAction(fn), opts...)
+}
+
+func (r *scopedHookRegistry) DoAction(ctx *pluginsdk.HookContext, name string, args ...any) error {
+	return r.engine.DoAction(withDefaultPluginID(ctx, r.pluginID), name, args...)
+}
+
+func (r *scopedHookRegistry) RemoveAction(name string, id pluginsdk.HookID) bool {
+	return r.engine.RemoveAction(name, id)
+}
+
+func (r *scopedHookRegistry) AddFilter(name string, fn pluginsdk.FilterFunc, opts ...pluginsdk.HookOptions) pluginsdk.HookID {
+	return r.engine.AddFilter(name, r.wrapFilter(fn), opts...)
+}
+
+func (r *scopedHookRegistry) ApplyFilters(ctx *pluginsdk.HookContext, name string, value any, args ...any) (any, error) {
+	return r.engine.ApplyFilters(withDefaultPluginID(ctx, r.pluginID), name, value, args...)
+}
+
+func (r *scopedHookRegistry) RemoveFilter(name string, id pluginsdk.HookID) bool {
+	return r.engine.RemoveFilter(name, id)
+}
+
+func (r *scopedHookRegistry) wrapAction(fn pluginsdk.ActionFunc) pluginsdk.ActionFunc {
+	if fn == nil {
+		return nil
+	}
+
+	return func(ctx *pluginsdk.HookContext, args ...any) error {
+		return fn(withDefaultPluginID(ctx, r.pluginID), args...)
+	}
+}
+
+func (r *scopedHookRegistry) wrapFilter(fn pluginsdk.FilterFunc) pluginsdk.FilterFunc {
+	if fn == nil {
+		return nil
+	}
+
+	return func(ctx *pluginsdk.HookContext, value any, args ...any) (any, error) {
+		return fn(withDefaultPluginID(ctx, r.pluginID), value, args...)
+	}
+}
+
+func withDefaultPluginID(ctx *pluginsdk.HookContext, pluginID string) *pluginsdk.HookContext {
+	if ctx == nil {
+		return &pluginsdk.HookContext{PluginID: pluginID}
+	}
+
+	if ctx.PluginID != "" {
+		return ctx
+	}
+
+	cloned := *ctx
+	cloned.PluginID = pluginID
+	return &cloned
+}
+
+type scopedEventBus struct {
+	pluginID string
+	bus      *EventBusImpl
+}
+
+func newScopedEventBus(pluginID string, bus *EventBusImpl) pluginsdk.EventBus {
+	return &scopedEventBus{
+		pluginID: strings.TrimSpace(pluginID),
+		bus:      bus,
+	}
+}
+
+func (b *scopedEventBus) Publish(name string, payload map[string]any) error {
+	return b.bus.publish(b.pluginID, name, payload)
+}
+
+func (b *scopedEventBus) Subscribe(name string, handler pluginsdk.EventHandler) string {
+	return b.bus.subscribe(b.pluginID, name, handler)
+}
+
+func (b *scopedEventBus) Unsubscribe(id string) bool {
+	return b.bus.Unsubscribe(id)
+}
+
+type slogLoggerAdapter struct {
+	logger *slog.Logger
+}
+
+func (l slogLoggerAdapter) Debug(msg string, args ...any) {
+	l.logger.Debug(msg, args...)
+}
+
+func (l slogLoggerAdapter) Info(msg string, args ...any) {
+	l.logger.Info(msg, args...)
+}
+
+func (l slogLoggerAdapter) Warn(msg string, args ...any) {
+	l.logger.Warn(msg, args...)
+}
+
+func (l slogLoggerAdapter) Error(msg string, args ...any) {
+	l.logger.Error(msg, args...)
+}

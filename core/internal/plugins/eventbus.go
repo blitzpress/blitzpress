@@ -25,9 +25,10 @@ var (
 )
 
 type subscription struct {
-	id      string
-	name    string
-	handler pluginsdk.EventHandler
+	id       string
+	name     string
+	handler  pluginsdk.EventHandler
+	pluginID string
 }
 
 type EventBusImpl struct {
@@ -101,8 +102,13 @@ func (e *EventBusImpl) Stop() {
 }
 
 func (e *EventBusImpl) Publish(name string, payload map[string]any) error {
+	return e.publish("", name, payload)
+}
+
+func (e *EventBusImpl) publish(pluginID, name string, payload map[string]any) error {
 	event := pluginsdk.Event{
 		Name:      name,
+		PluginID:  pluginID,
 		Payload:   cloneEventPayload(payload),
 		Timestamp: *carbon.NewDateTime(carbon.Now()),
 	}
@@ -126,11 +132,16 @@ func (e *EventBusImpl) Publish(name string, payload map[string]any) error {
 }
 
 func (e *EventBusImpl) Subscribe(name string, handler pluginsdk.EventHandler) string {
+	return e.subscribe("", name, handler)
+}
+
+func (e *EventBusImpl) subscribe(pluginID, name string, handler pluginsdk.EventHandler) string {
 	id := "sub_" + strconv.FormatUint(e.nextID.Add(1), 10)
 	sub := subscription{
-		id:      id,
-		name:    name,
-		handler: handler,
+		id:       id,
+		name:     name,
+		handler:  handler,
+		pluginID: pluginID,
 	}
 
 	e.subsMu.Lock()

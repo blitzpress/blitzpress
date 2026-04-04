@@ -8,12 +8,15 @@ import (
 )
 
 type LoadedPlugin struct {
-	Manifest     pluginsdk.Manifest
-	ManifestFile PluginManifestFile
-	Path         string
-	Instance     pluginsdk.Plugin
-	Status       string
-	Errors       []error
+	Manifest       pluginsdk.Manifest
+	ManifestFile   PluginManifestFile
+	Path           string
+	Instance       pluginsdk.Plugin
+	Status         string
+	Errors         []error
+	Routes         []registeredRoute
+	Statics        []registeredStatic
+	SettingsSchema *pluginsdk.SettingsSchema
 }
 
 func LoadPlugin(dp DiscoveredPlugin) (*LoadedPlugin, error) {

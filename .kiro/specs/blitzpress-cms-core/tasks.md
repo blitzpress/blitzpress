@@ -155,8 +155,8 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Test type conversion methods
     - _Requirements: 12.1, 12.6, 12.7_
 
-- [ ] 11. Implement plugin registry (`core/internal/plugins/registry.go`)
-  - [ ] 11.1 Create central plugin registry
+- [x] 11. Implement plugin registry (`core/internal/plugins/registry.go`)
+  - [x] 11.1 Create central plugin registry
     - Implement `PluginRegistry` struct with thread-safe plugin map
     - Implement `NewPluginRegistry()` constructor
     - Implement `DiscoverAndLoad()` orchestration method
@@ -166,7 +166,7 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Implement `GetPlugin()`, `ListPlugins()`, and `MountRoutes()` methods
     - _Requirements: 6.2, 6.3, 6.4, 6.5, 3.9, 8.1_
 
-  - [ ] 11.2 Write integration tests for plugin registry
+  - [x] 11.2 Write integration tests for plugin registry
     - Test full plugin lifecycle (discover, load, register)
     - Test hook firing sequence
     - Test error handling for failed plugins
