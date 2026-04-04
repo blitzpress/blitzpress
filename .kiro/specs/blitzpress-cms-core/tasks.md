@@ -126,8 +126,8 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Test graceful shutdown
     - _Requirements: 4.1, 4.2, 4.5, 4.6_
 
-- [ ] 9. Implement HTTP registry (`core/internal/plugins/http.go`)
-  - [ ] 9.1 Create plugin HTTP registry
+- [x] 9. Implement HTTP registry (`core/internal/plugins/http.go`)
+  - [x] 9.1 Create plugin HTTP registry
     - Implement `pluginHTTPRegistry` struct to collect route and static registrations
     - Implement `API()` to collect plugin API route functions
     - Implement `Static()` to collect embedded filesystem mounts
@@ -135,7 +135,7 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Static assets are served at `/plugins/{pluginID}/assets/`
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6_
 
-  - [ ] 9.2 Write unit tests for HTTP registry
+  - [x] 9.2 Write unit tests for HTTP registry
     - Test route collection during registration
     - Test static filesystem collection
     - Test namespace enforcement
