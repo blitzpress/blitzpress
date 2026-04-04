@@ -190,8 +190,8 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Test module serving
     - _Requirements: 8.3, 12.5_
 
-- [ ] 14. Implement core entrypoint (`core/main.go`)
-  - [ ] 14.1 Create main application startup sequence
+- [x] 14. Implement core entrypoint (`core/main.go`)
+  - [x] 14.1 Create main application startup sequence
     - Load configuration from environment
     - Initialize slog logger
     - Initialize GORM database connection
@@ -208,7 +208,7 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Start Fiber server
     - _Requirements: 8.1, 8.2, 8.3_
 
-  - [ ] 14.2 Write integration tests for core startup
+  - [x] 14.2 Write integration tests for core startup
     - Test full startup sequence
     - Test graceful shutdown
     - Test import map injection
