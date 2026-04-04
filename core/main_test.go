@@ -167,8 +167,11 @@ func TestCoreApplicationServesSPAAndInjectsImportMap(t *testing.T) {
 	if !strings.Contains(rootHTML, `"solid-js":"/api/cms/modules/solid-js.js"`) {
 		t.Fatalf("expected solid-js import map entry, got %q", rootHTML)
 	}
-	if !strings.Contains(rootHTML, `<script type="module" src="/assets/index.js"></script>`) {
-		t.Fatalf("expected placeholder frontend script tag, got %q", rootHTML)
+	if !strings.Contains(rootHTML, `<script type="module" crossorigin src="/assets/index.js"></script>`) {
+		t.Fatalf("expected frontend script tag, got %q", rootHTML)
+	}
+	if !strings.Contains(rootHTML, `<link rel="stylesheet" crossorigin href="/assets/style.css">`) {
+		t.Fatalf("expected frontend stylesheet link, got %q", rootHTML)
 	}
 
 	spaResp, err := app.app.Test(httptest.NewRequest(http.MethodGet, "/admin/plugins/example-plugin", nil))
@@ -191,11 +194,11 @@ func TestCoreApplicationServesSPAAndInjectsImportMap(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading asset response failed: %v", err)
 	}
-	if assetResp.StatusCode != http.StatusOK || !strings.Contains(string(assetBody), "BlitzPress frontend placeholder loaded") {
-		t.Fatalf("expected static asset response, got status=%d body=%q", assetResp.StatusCode, string(assetBody))
+	if assetResp.StatusCode != http.StatusOK || !strings.Contains(string(assetBody), "BlitzPress Admin") {
+		t.Fatalf("expected compiled frontend asset response, got status=%d body=%q", assetResp.StatusCode, string(assetBody))
 	}
 
-	moduleResp, err := app.app.Test(httptest.NewRequest(http.MethodGet, "/api/cms/modules/solid-js.js", nil))
+	moduleResp, err := app.app.Test(httptest.NewRequest(http.MethodGet, "/api/cms/modules/plugin-sdk.js", nil))
 	if err != nil {
 		t.Fatalf("module app.Test() error = %v", err)
 	}
@@ -203,8 +206,8 @@ func TestCoreApplicationServesSPAAndInjectsImportMap(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading module response failed: %v", err)
 	}
-	if moduleResp.StatusCode != http.StatusOK || !strings.Contains(string(moduleBody), `export const version = "placeholder";`) {
-		t.Fatalf("expected module response, got status=%d body=%q", moduleResp.StatusCode, string(moduleBody))
+	if moduleResp.StatusCode != http.StatusOK || !strings.Contains(string(moduleBody), "registerPlugin") {
+		t.Fatalf("expected frontend module response, got status=%d body=%q", moduleResp.StatusCode, string(moduleBody))
 	}
 }
 

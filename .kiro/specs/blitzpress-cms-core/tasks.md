@@ -214,15 +214,15 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Test import map injection
     - _Requirements: 8.1, 8.2_
 
-- [ ] 15. Implement SolidJS frontend core (`core/frontend/`)
-  - [ ] 15.1 Set up SolidJS project structure
+- [x] 15. Implement SolidJS frontend core (`core/frontend/`)
+  - [x] 15.1 Set up SolidJS project structure
     - Create `package.json` with SolidJS, Vite, and TypeScript dependencies
     - Create `vite.config.ts` with main app build and modules build configurations
     - Create `tsconfig.json` with appropriate compiler options
     - Create `index.html` with placeholder for import map injection
     - _Requirements: 10.1, 10.2_
 
-  - [ ] 15.2 Create plugin runtime system
+  - [x] 15.2 Create plugin runtime system
     - Create `src/plugin-runtime/types.ts` with all frontend interfaces
     - Create `src/plugin-runtime/registry.ts` with SolidJS store for plugin registrations
     - Create `src/plugin-runtime/hooks.ts` with frontend hook engine (priority-based)
@@ -230,7 +230,7 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Create `src/plugin-runtime/loader.ts` to fetch and dynamically import plugin frontends
     - _Requirements: 10.3, 10.4, 10.5, 10.6, 10.7_
 
-  - [ ] 15.3 Create shared ESM module wrappers
+  - [x] 15.3 Create shared ESM module wrappers
     - Create `src/modules/solid-js.ts` re-exporting `solid-js`
     - Create `src/modules/solid-js-web.ts` re-exporting `solid-js/web`
     - Create `src/modules/solid-js-store.ts` re-exporting `solid-js/store`
@@ -238,14 +238,14 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Configure Vite to build these as separate ES modules
     - _Requirements: 10.1, 10.2_
 
-  - [ ] 15.4 Create main app component
+  - [x] 15.4 Create main app component
     - Create `src/App.tsx` with router and plugin page rendering
     - Create `src/index.tsx` as entry point
     - Call `loadPlugins()` on app mount
     - Render plugin pages and widgets from registry
     - _Requirements: 10.3, 10.5, 10.6_
 
-  - [ ] 15.5 Write unit tests for frontend plugin runtime
+  - [x] 15.5 Write unit tests for frontend plugin runtime
     - Test hook engine priority ordering
     - Test event bus pub/sub
     - Test plugin registration
