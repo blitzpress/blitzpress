@@ -251,8 +251,8 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Test plugin registration
     - _Requirements: 10.6, 10.7_
 
-- [ ] 16. Implement `@blitzpress/vite-plugin` package
-  - [ ] 16.1 Create Vite plugin for plugin authors
+- [x] 16. Implement `@blitzpress/vite-plugin` package
+  - [x] 16.1 Create Vite plugin for plugin authors
     - Create `core/frontend/packages/vite-plugin/` directory
     - Create `package.json` with Vite peer dependency
     - Create `src/index.ts` with plugin implementation
@@ -261,7 +261,7 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Accept `pluginId` option for base path configuration
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
 
-  - [ ] 16.2 Write unit tests for Vite plugin
+  - [x] 16.2 Write unit tests for Vite plugin
     - Test external dependency configuration
     - Test output format settings
     - _Requirements: 11.2, 11.3_
