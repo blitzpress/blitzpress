@@ -125,6 +125,61 @@ func TestBuildAllAndRunCoreBinaryWithExamplePlugin(t *testing.T) {
 		t.Fatalf("expected plugin status static asset path, got %q", status.StaticAsset)
 	}
 
+	var hooksStatus struct {
+		CoreReadyReceived bool `json:"core_ready_received"`
+		MenuItems         []struct {
+			ID    string `json:"id"`
+			Label string `json:"label"`
+			Icon  string `json:"icon"`
+			Path  string `json:"path"`
+		} `json:"menu_items"`
+	}
+	coreE2EGetJSON(t, baseURL+"/api/plugins/example-plugin/hooks-status", &hooksStatus)
+	if !hooksStatus.CoreReadyReceived {
+		t.Fatalf("expected core.ready hook to have fired in example plugin")
+	}
+	if len(hooksStatus.MenuItems) != 1 {
+		t.Fatalf("expected 1 menu item from admin.menu.items filter, got %d", len(hooksStatus.MenuItems))
+	}
+	if hooksStatus.MenuItems[0].ID != "example-plugin.home" {
+		t.Fatalf("expected menu item id %q, got %q", "example-plugin.home", hooksStatus.MenuItems[0].ID)
+	}
+	if hooksStatus.MenuItems[0].Label != "Example Plugin" {
+		t.Fatalf("expected menu item label %q, got %q", "Example Plugin", hooksStatus.MenuItems[0].Label)
+	}
+	if hooksStatus.MenuItems[0].Path != "/plugins/example-plugin" {
+		t.Fatalf("expected menu item path %q, got %q", "/plugins/example-plugin", hooksStatus.MenuItems[0].Path)
+	}
+
+	var publishResult struct {
+		Published bool `json:"published"`
+	}
+	coreE2EPostJSON(t, baseURL+"/api/plugins/example-plugin/events/publish",
+		`{"name":"example.ping","data":{"source":"e2e","seq":1}}`, &publishResult)
+	if !publishResult.Published {
+		t.Fatalf("expected event publish to succeed")
+	}
+
+	time.Sleep(200 * time.Millisecond)
+
+	var eventsResult struct {
+		Events []struct {
+			Name    string         `json:"name"`
+			Payload map[string]any `json:"payload"`
+		} `json:"events"`
+	}
+	coreE2EGetJSON(t, baseURL+"/api/plugins/example-plugin/events/received", &eventsResult)
+	if len(eventsResult.Events) < 1 {
+		t.Fatalf("expected at least 1 received event, got %d", len(eventsResult.Events))
+	}
+	lastEvent := eventsResult.Events[len(eventsResult.Events)-1]
+	if lastEvent.Name != "example.ping" {
+		t.Fatalf("expected received event name %q, got %q", "example.ping", lastEvent.Name)
+	}
+	if lastEvent.Payload["source"] != "e2e" {
+		t.Fatalf("expected received event payload source %q, got %v", "e2e", lastEvent.Payload["source"])
+	}
+
 	var settings struct {
 		Schema *struct {
 			Sections []struct {
@@ -242,6 +297,17 @@ func coreE2EGetJSON(t *testing.T, url string, target any) {
 	t.Helper()
 
 	response := coreE2ERequest(t, http.MethodGet, url, "")
+	defer response.Body.Close()
+
+	if err := json.NewDecoder(response.Body).Decode(target); err != nil {
+		t.Fatalf("decoding %s response failed: %v", url, err)
+	}
+}
+
+func coreE2EPostJSON(t *testing.T, url, body string, target any) {
+	t.Helper()
+
+	response := coreE2ERequest(t, http.MethodPost, url, body)
 	defer response.Body.Close()
 
 	if err := json.NewDecoder(response.Body).Decode(target); err != nil {

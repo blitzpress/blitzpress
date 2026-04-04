@@ -4,6 +4,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"sync"
 
 	pluginsdk "github.com/BlitzPress/BlitzPress/plugin-sdk"
 	"github.com/gofiber/fiber/v2"
@@ -27,6 +28,19 @@ const (
 var staticFiles embed.FS
 
 type ExamplePlugin struct{}
+
+type hookEventState struct {
+	mu               sync.Mutex
+	coreReadyFired   bool
+	receivedEvents   []receivedEvent
+}
+
+type receivedEvent struct {
+	Name    string         `json:"name"`
+	Payload map[string]any `json:"payload"`
+}
+
+var state hookEventState
 
 type exampleSettings struct {
 	Greeting     string
@@ -124,6 +138,73 @@ func (p ExamplePlugin) Register(r *pluginsdk.Registrar) error {
 				"static_asset":   staticAssetPath,
 			})
 		})
+
+		router.Get("/hooks-status", func(c *fiber.Ctx) error {
+			state.mu.Lock()
+			coreReady := state.coreReadyFired
+			state.mu.Unlock()
+
+			menuItems, err := r.Hooks.ApplyFilters(
+				&pluginsdk.HookContext{PluginID: pluginID},
+				"admin.menu.items",
+				[]pluginsdk.MenuItem(nil),
+			)
+			if err != nil {
+				return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+			}
+
+			type menuItemJSON struct {
+				ID    string `json:"id"`
+				Label string `json:"label"`
+				Icon  string `json:"icon"`
+				Path  string `json:"path"`
+			}
+
+			var items []menuItemJSON
+			if resolved, ok := menuItems.([]pluginsdk.MenuItem); ok {
+				for _, item := range resolved {
+					items = append(items, menuItemJSON{
+						ID:    item.ID,
+						Label: item.Label,
+						Icon:  item.Icon,
+						Path:  item.Path,
+					})
+				}
+			}
+
+			return c.JSON(fiber.Map{
+				"core_ready_received": coreReady,
+				"menu_items":          items,
+			})
+		})
+
+		router.Post("/events/publish", func(c *fiber.Ctx) error {
+			var payload struct {
+				Name string         `json:"name"`
+				Data map[string]any `json:"data"`
+			}
+			if err := c.BodyParser(&payload); err != nil {
+				return fiber.NewError(fiber.StatusBadRequest, err.Error())
+			}
+			if payload.Name == "" {
+				return fiber.NewError(fiber.StatusBadRequest, "event name is required")
+			}
+
+			if err := r.Events.Publish(payload.Name, payload.Data); err != nil {
+				return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+			}
+
+			return c.JSON(fiber.Map{"published": true})
+		})
+
+		router.Get("/events/received", func(c *fiber.Ctx) error {
+			state.mu.Lock()
+			events := make([]receivedEvent, len(state.receivedEvents))
+			copy(events, state.receivedEvents)
+			state.mu.Unlock()
+
+			return c.JSON(fiber.Map{"events": events})
+		})
 	}); err != nil {
 		return err
 	}
@@ -133,6 +214,10 @@ func (p ExamplePlugin) Register(r *pluginsdk.Registrar) error {
 	}
 
 	r.Hooks.AddAction("core.ready", func(ctx *pluginsdk.HookContext, args ...any) error {
+		state.mu.Lock()
+		state.coreReadyFired = true
+		state.mu.Unlock()
+
 		current := loadSettings(r)
 		if r.Logger != nil {
 			r.Logger.Info(
@@ -142,6 +227,16 @@ func (p ExamplePlugin) Register(r *pluginsdk.Registrar) error {
 				"mode", current.Mode,
 			)
 		}
+		return nil
+	})
+
+	r.Events.Subscribe("example.ping", func(event pluginsdk.Event) error {
+		state.mu.Lock()
+		state.receivedEvents = append(state.receivedEvents, receivedEvent{
+			Name:    event.Name,
+			Payload: event.Payload,
+		})
+		state.mu.Unlock()
 		return nil
 	})
 
