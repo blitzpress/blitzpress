@@ -166,6 +166,94 @@ func TestPluginRegistryFiresPluginLoadedHooksInDiscoveryOrder(t *testing.T) {
 	}
 }
 
+func TestPluginRegistryStoresDisabledPluginsWithoutLoading(t *testing.T) {
+	t.Parallel()
+
+	db := newSettingsTestDB(t, "plugin_registry_disabled")
+	if err := db.Model(&database.PluginState{}).Create(map[string]any{
+		"plugin_id": "disabled-plugin",
+		"enabled":   false,
+		"version":   "1.0.0",
+	}).Error; err != nil {
+		t.Fatalf("Create(disabled plugin state) error = %v", err)
+	}
+
+	pluginsDir := t.TempDir()
+	buildRegistryPlugin(t, pluginsDir, registryPluginFixture{
+		id:          "disabled-plugin",
+		name:        "Disabled Plugin",
+		version:     "1.0.0",
+		sdkVersion:  pluginsdk.SDKVersion,
+		hasFrontend: true,
+		source:      successfulRegistryPluginSource("disabled-plugin", "Disabled Plugin", "1.0.0"),
+		staticFiles: map[string]string{
+			"static/hello.txt": "disabled asset",
+		},
+		buildFiles: map[string]string{
+			"frontend/assets/index.js":  `console.log("disabled frontend");`,
+			"frontend/assets/index.css": ".disabled{color:gray;}",
+		},
+	})
+
+	registry := NewPluginRegistry(db, nil)
+	var loadedIDs []string
+	registry.Hooks().AddAction("plugin.loaded", func(ctx *pluginsdk.HookContext, args ...any) error {
+		loadedIDs = append(loadedIDs, ctx.PluginID)
+		return nil
+	})
+
+	if err := registry.DiscoverAndLoad(pluginsDir); err != nil {
+		t.Fatalf("DiscoverAndLoad() error = %v", err)
+	}
+
+	disabled, ok := registry.GetPlugin("disabled-plugin")
+	if !ok {
+		t.Fatal("expected disabled plugin to be stored in registry")
+	}
+
+	if disabled.Status != "disabled" {
+		t.Fatalf("expected disabled plugin status %q, got %q", "disabled", disabled.Status)
+	}
+
+	if disabled.Instance != nil {
+		t.Fatalf("expected disabled plugin instance to be nil, got %#v", disabled.Instance)
+	}
+
+	if len(disabled.Errors) != 0 {
+		t.Fatalf("expected disabled plugin to have no errors, got %v", disabled.Errors)
+	}
+
+	if disabled.Manifest.ID != "disabled-plugin" {
+		t.Fatalf("expected disabled plugin manifest id %q, got %q", "disabled-plugin", disabled.Manifest.ID)
+	}
+
+	if len(loadedIDs) != 0 {
+		t.Fatalf("expected no plugin.loaded hooks for disabled plugins, got %v", loadedIDs)
+	}
+
+	app := fiber.New()
+	api := app.Group("/api")
+	registry.MountRoutes(api, app)
+
+	routeResp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/plugins/disabled-plugin/hello", nil))
+	if err != nil {
+		t.Fatalf("disabled route app.Test() error = %v", err)
+	}
+
+	if routeResp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected disabled plugin route status %d, got %d", http.StatusNotFound, routeResp.StatusCode)
+	}
+
+	staticResp, err := app.Test(httptest.NewRequest(http.MethodGet, "/plugins/disabled-plugin/assets/index.js", nil))
+	if err != nil {
+		t.Fatalf("disabled static app.Test() error = %v", err)
+	}
+
+	if staticResp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected disabled plugin static status %d, got %d", http.StatusNotFound, staticResp.StatusCode)
+	}
+}
+
 func TestPluginRegistryMountRoutesServesFrontendBuildAssets(t *testing.T) {
 	t.Parallel()
 

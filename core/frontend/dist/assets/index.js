@@ -537,6 +537,18 @@ function ensureStylesheet(documentRef, href) {
   link.href = href;
   documentRef.head.appendChild(link);
 }
+function validateFrontendDescriptor(descriptor) {
+  if (!descriptor.has_frontend) {
+    return null;
+  }
+  if (!descriptor.frontend_entry) {
+    return "plugin manifest is missing frontend_entry";
+  }
+  if (!descriptor.frontend_style) {
+    return "plugin manifest is missing frontend_style";
+  }
+  return null;
+}
 async function fetchPluginDescriptors(fetchImpl) {
   const response = await fetchImpl("/api/cms/plugins");
   if (!response.ok) {
@@ -557,12 +569,23 @@ async function loadPlugins(options = {}) {
     failed: []
   };
   for (const descriptor of descriptors) {
-    if (!descriptor.has_frontend || !descriptor.frontend_entry) {
+    if (!descriptor.has_frontend) {
       continue;
     }
-    ensureStylesheet(documentRef, descriptor.frontend_style);
+    const validationError = validateFrontendDescriptor(descriptor);
+    if (validationError) {
+      summary.failed.push({
+        pluginId: descriptor.id,
+        error: validationError
+      });
+      console.error(`invalid plugin frontend manifest: ${descriptor.id}`, validationError);
+      continue;
+    }
+    const frontendEntry = descriptor.frontend_entry;
+    const frontendStyle = descriptor.frontend_style;
+    ensureStylesheet(documentRef, frontendStyle);
     try {
-      await importer(descriptor.frontend_entry);
+      await importer(frontendEntry);
       summary.loaded.push(descriptor.id);
     } catch (error) {
       summary.failed.push({
@@ -575,7 +598,7 @@ async function loadPlugins(options = {}) {
   return summary;
 }
 
-var _tmpl$ = /* @__PURE__ */ template(`<section class=widget-card><header><div><h3></h3><small></small></div><span class=pill>Widget`), _tmpl$2 = /* @__PURE__ */ template(`<p>Loading widget module…`), _tmpl$3 = /* @__PURE__ */ template(`<section class="page-frame panel"><header><div><small>Plugin page</small><h2></h2></div><span class=pill>`), _tmpl$4 = /* @__PURE__ */ template(`<p>Loading page module…`), _tmpl$5 = /* @__PURE__ */ template(`<section class=nav-section><h2>Plugin settings`), _tmpl$6 = /* @__PURE__ */ template(`<p>Discovered <!> plugin(s) and loaded <!> frontend bundle(s).`), _tmpl$7 = /* @__PURE__ */ template(`<p>`), _tmpl$8 = /* @__PURE__ */ template(`<div class=app-shell><aside class=sidebar><div class=brand><p>Plugin-driven CMS runtime</p><h1>BlitzPress Admin</h1><p>SolidJS core frontend that discovers plugin pages, widgets, hooks, and shared frontend modules at runtime.</p></div><section class=nav-section><h2>Navigation</h2><a href=/>Dashboard</a></section><section class=status-card><h2>Runtime status</h2><ul class=status-list><li> registered plugin runtime(s)</li><li> plugin page(s)</li><li> dashboard widget(s)</li></ul></section></aside><main class=main-content>`), _tmpl$9 = /* @__PURE__ */ template(`<a>`), _tmpl$0 = /* @__PURE__ */ template(`<a> settings`), _tmpl$1 = /* @__PURE__ */ template(`<p>Loading plugin frontends…`), _tmpl$10 = /* @__PURE__ */ template(`<section class=hero><p>Core frontend shell</p><h2>Runtime-loaded extensions</h2><p>The embedded SolidJS app now exposes frontend hooks, an event bus, plugin registries, and shared ESM modules that plugin frontends can consume without rebuilding the core.`), _tmpl$11 = /* @__PURE__ */ template(`<section class=metrics><article class=metric><strong></strong><span>Registered plugins</span></article><article class=metric><strong></strong><span>Plugin pages</span></article><article class=metric><strong></strong><span>Dashboard widgets`), _tmpl$12 = /* @__PURE__ */ template(`<section class=panel><h2>Extension lifecycle</h2><ol class=extension-list><li>Fetch plugin manifests from <code>/api/cms/plugins</code>.</li><li>Inject plugin stylesheets before each frontend module import.</li><li>Load plugin ES modules through the browser import map.</li><li>Let plugins register pages, widgets, hooks, events, and settings extensions.</li><li>Auto-render plugin settings from schema or a plugin-provided custom settings component.`), _tmpl$13 = /* @__PURE__ */ template(`<section class=grid>`), _tmpl$14 = /* @__PURE__ */ template(`<ul class=status-list>`), _tmpl$15 = /* @__PURE__ */ template(`<section class=empty-state><h2>No plugin widgets registered yet</h2><p>Install a plugin frontend and call <code>registerPlugin()</code> to populate the dashboard with widgets and routes.`), _tmpl$16 = /* @__PURE__ */ template(`<li>: `);
+var _tmpl$ = /* @__PURE__ */ template(`<section class=widget-card><header><div><h3></h3><small></small></div><span class=pill>Widget`), _tmpl$2 = /* @__PURE__ */ template(`<p>Loading widget module…`), _tmpl$3 = /* @__PURE__ */ template(`<section class="page-frame panel"><header><div><small>Plugin page</small><h2></h2></div><span class=pill>`), _tmpl$4 = /* @__PURE__ */ template(`<p>Loading page module…`), _tmpl$5 = /* @__PURE__ */ template(`<section class=nav-section><h2>Plugin settings`), _tmpl$6 = /* @__PURE__ */ template(`<p>Discovered <!> plugin(s) and loaded <!> frontend bundle(s).`), _tmpl$7 = /* @__PURE__ */ template(`<p>`), _tmpl$8 = /* @__PURE__ */ template(`<div class=app-shell><aside class=sidebar><div class=brand><p>Plugin-driven CMS runtime</p><h1>BlitzPress Admin</h1><p>SolidJS core frontend that discovers plugin pages, widgets, hooks, and shared frontend modules at runtime.</p></div><section class=nav-section><h2>Navigation</h2><a href=/>Dashboard</a></section><section class=status-card><h2>Runtime status</h2><ul class=status-list><li> registered plugin runtime(s)</li><li> plugin page(s)</li><li> dashboard widget(s)</li></ul></section></aside><main class=main-content>`), _tmpl$9 = /* @__PURE__ */ template(`<a>`), _tmpl$0 = /* @__PURE__ */ template(`<a> settings`), _tmpl$1 = /* @__PURE__ */ template(`<p>Loading plugin frontends…`), _tmpl$10 = /* @__PURE__ */ template(`<section class=hero><p>Core frontend shell</p><h2>Runtime-loaded extensions</h2><p>The embedded SolidJS app now exposes frontend hooks, an event bus, plugin registries, and shared ESM modules that plugin frontends can consume without rebuilding the core.`), _tmpl$11 = /* @__PURE__ */ template(`<section class=metrics><article class=metric><strong></strong><span>Registered plugins</span></article><article class=metric><strong></strong><span>Plugin pages</span></article><article class=metric><strong></strong><span>Dashboard widgets`), _tmpl$12 = /* @__PURE__ */ template(`<section class=panel><h2>Extension lifecycle</h2><ol class=extension-list><li>Fetch plugin manifests from <code>/api/cms/plugins</code>.</li><li>Inject plugin stylesheets before each frontend module import.</li><li>Load plugin ES modules through the browser import map.</li><li>Let plugins register pages, widgets, hooks, events, and settings extensions.</li><li>Auto-render plugin settings from schema or a plugin-provided custom settings component.`), _tmpl$13 = /* @__PURE__ */ template(`<section class=grid>`), _tmpl$14 = /* @__PURE__ */ template(`<section class=empty-state><h2>No plugin widgets registered yet</h2><p>Install a plugin frontend and call <code>registerPlugin()</code> to populate the dashboard with widgets and routes.`), _tmpl$15 = /* @__PURE__ */ template(`<ul class=status-list>`), _tmpl$16 = /* @__PURE__ */ template(`<li>: `);
 function normalizePath(pathname) {
   const normalized = pathname.replace(/\/+$/, "") || "/";
   return normalized.startsWith("/") ? normalized : `/${normalized}`;
@@ -765,6 +788,11 @@ function App() {
         return _el$28;
       }
     }), _el$29);
+    insert(_el$20, createComponent(PluginLoadFailures, {
+      get status() {
+        return loadStatus();
+      }
+    }), _el$29);
     insert(_el$30, () => runtimeState.plugins.length, _el$31);
     insert(_el$32, () => pages().length, _el$33);
     insert(_el$34, () => widgets().length, _el$35);
@@ -840,31 +868,38 @@ function Dashboard(props) {
   })];
 }
 function EmptyState(props) {
-  const failures = () => props.status.state === "ready" ? props.status.summary.failed : [];
   return (() => {
-    var _el$51 = _tmpl$15(), _el$52 = _el$51.firstChild; _el$52.nextSibling;
-    insert(_el$51, createComponent(Show, {
-      get when() {
-        return failures().length > 0;
-      },
-      get children() {
-        var _el$54 = _tmpl$14();
-        insert(_el$54, createComponent(For, {
-          get each() {
-            return failures();
-          },
-          children: (failure) => (() => {
-            var _el$55 = _tmpl$16(), _el$56 = _el$55.firstChild;
-            insert(_el$55, () => failure.pluginId, _el$56);
-            insert(_el$55, () => failure.error, null);
-            return _el$55;
-          })()
-        }));
-        return _el$54;
+    var _el$51 = _tmpl$14(), _el$52 = _el$51.firstChild; _el$52.nextSibling;
+    insert(_el$51, createComponent(PluginLoadFailures, {
+      get status() {
+        return props.status;
       }
     }), null);
     return _el$51;
   })();
+}
+function PluginLoadFailures(props) {
+  const failures = () => props.status.state === "ready" ? props.status.summary.failed : [];
+  return createComponent(Show, {
+    get when() {
+      return failures().length > 0;
+    },
+    get children() {
+      var _el$54 = _tmpl$15();
+      insert(_el$54, createComponent(For, {
+        get each() {
+          return failures();
+        },
+        children: (failure) => (() => {
+          var _el$55 = _tmpl$16(), _el$56 = _el$55.firstChild;
+          insert(_el$55, () => failure.pluginId, _el$56);
+          insert(_el$55, () => failure.error, null);
+          return _el$55;
+        })()
+      }));
+      return _el$54;
+    }
+  });
 }
 delegateEvents(["click"]);
 

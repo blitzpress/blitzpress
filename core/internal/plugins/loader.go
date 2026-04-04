@@ -70,6 +70,19 @@ func LoadPlugin(dp DiscoveredPlugin) (*LoadedPlugin, error) {
 	return loaded, nil
 }
 
+func disabledLoadedPlugin(dp DiscoveredPlugin) *LoadedPlugin {
+	return &LoadedPlugin{
+		Manifest: pluginsdk.Manifest{
+			ID:      dp.ManifestFile.ID,
+			Name:    dp.ManifestFile.Name,
+			Version: dp.ManifestFile.Version,
+		},
+		ManifestFile: dp.ManifestFile,
+		Path:         dp.Dir,
+		Status:       "disabled",
+	}
+}
+
 func resolvePluginSymbol(symbol stdplugin.Symbol) (pluginsdk.Plugin, error) {
 	switch value := symbol.(type) {
 	case *pluginsdk.Plugin:

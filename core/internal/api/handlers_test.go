@@ -71,6 +71,59 @@ func TestCMSPluginsHandlerReturnsLoadedPlugins(t *testing.T) {
 	}
 }
 
+func TestCMSPluginsHandlerSkipsDisabledPlugins(t *testing.T) {
+	t.Parallel()
+
+	db := newAPITestDB(t, "api_disabled_plugins")
+	if err := db.Model(&database.PluginState{}).Create(map[string]any{
+		"plugin_id": "disabled-plugin",
+		"enabled":   false,
+		"version":   "1.0.0",
+	}).Error; err != nil {
+		t.Fatalf("Create(disabled plugin state) error = %v", err)
+	}
+
+	registry := buildAPITestRegistry(t, []apiPluginFixture{
+		{
+			id:      "enabled-plugin",
+			name:    "Enabled Plugin",
+			version: "1.0.0",
+			source:  settingsPluginSource("enabled-plugin", "Enabled Plugin", "1.0.0"),
+		},
+		{
+			id:      "disabled-plugin",
+			name:    "Disabled Plugin",
+			version: "1.0.0",
+			source:  settingsPluginSource("disabled-plugin", "Disabled Plugin", "1.0.0"),
+		},
+	}, db)
+
+	app := fiber.New()
+	app.Get("/api/cms/plugins", CMSPluginsHandler(registry))
+
+	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/cms/plugins", nil))
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, resp.StatusCode)
+	}
+
+	var payload pluginListResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("decoding response failed: %v", err)
+	}
+
+	if len(payload.Plugins) != 1 {
+		t.Fatalf("expected 1 enabled plugin, got %d", len(payload.Plugins))
+	}
+
+	if payload.Plugins[0].ID != "enabled-plugin" {
+		t.Fatalf("expected only enabled plugin in payload, got %#v", payload.Plugins)
+	}
+}
+
 func TestPluginSettingsHandlersGetPutAndValidate(t *testing.T) {
 	t.Parallel()
 

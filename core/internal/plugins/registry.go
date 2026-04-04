@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"log/slog"
@@ -12,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/BlitzPress/BlitzPress/core/internal/database"
 	"github.com/gofiber/fiber/v2"
 
 	pluginsdk "github.com/BlitzPress/BlitzPress/plugin-sdk"
@@ -62,6 +64,19 @@ func (r *PluginRegistry) DiscoverAndLoad(pluginsDir string) error {
 	}
 
 	for _, dp := range discovered {
+		enabled, err := r.pluginEnabled(dp.ManifestFile.ID)
+		if err != nil {
+			r.logger.Error("plugin state lookup failed", "plugin_id", dp.ManifestFile.ID, "error", err)
+			r.storePlugin(fallbackLoadedPlugin(nil, dp, err))
+			errs = append(errs, err)
+			continue
+		}
+		if !enabled {
+			r.logger.Info("plugin is disabled; skipping load", "plugin_id", dp.ManifestFile.ID)
+			r.storePlugin(disabledLoadedPlugin(dp))
+			continue
+		}
+
 		loaded, err := LoadPlugin(dp)
 		if err != nil {
 			r.logger.Error("plugin load failed", "plugin_id", dp.ManifestFile.ID, "error", err)
@@ -109,6 +124,23 @@ func (r *PluginRegistry) DiscoverAndLoad(pluginsDir string) error {
 	}
 
 	return errors.Join(errs...)
+}
+
+func (r *PluginRegistry) pluginEnabled(pluginID string) (bool, error) {
+	if r.db == nil {
+		return true, nil
+	}
+
+	var state database.PluginState
+	result := r.db.Where("plugin_id = ?", pluginID).Limit(1).Find(&state)
+	switch {
+	case result.Error == nil && result.RowsAffected == 0:
+		return true, nil
+	case result.Error == nil:
+		return state.Enabled, nil
+	default:
+		return false, fmt.Errorf("lookup plugin state for %q: %w", pluginID, result.Error)
+	}
 }
 
 func (r *PluginRegistry) GetPlugin(id string) (*LoadedPlugin, bool) {
