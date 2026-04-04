@@ -176,15 +176,15 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
   - Run `go build` in `plugin-sdk/`, `core/`, and verify no errors
   - Ensure all tests pass, ask the user if questions arise
 
-- [ ] 13. Implement core API handlers (`core/internal/api/`)
-  - [ ] 13.1 Create core API endpoints
+- [x] 13. Implement core API handlers (`core/internal/api/`)
+  - [x] 13.1 Create core API endpoints
     - Implement `GET /api/cms/plugins` handler to list loaded plugins with frontend info
     - Implement `GET /api/admin/plugins/:id/settings` handler to return schema and values
     - Implement `PUT /api/admin/plugins/:id/settings` handler with schema validation
     - Implement `GET /api/cms/modules/*` handler to serve shared ESM modules
     - _Requirements: 8.3, 10.2, 10.3, 12.5_
 
-  - [ ] 13.2 Write unit tests for API handlers
+  - [x] 13.2 Write unit tests for API handlers
     - Test plugin list endpoint response format
     - Test settings GET/PUT with validation
     - Test module serving

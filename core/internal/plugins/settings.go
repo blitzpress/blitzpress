@@ -52,6 +52,10 @@ func newPluginConfigReader(pluginID string, db *gorm.DB) *pluginConfigReader {
 	}
 }
 
+func NewPluginConfigReader(pluginID string, db *gorm.DB) pluginsdk.ConfigReader {
+	return newPluginConfigReader(pluginID, db)
+}
+
 func (r *pluginConfigReader) Get(key string) (string, error) {
 	value, err := r.getDecoded(key)
 	if err != nil {
