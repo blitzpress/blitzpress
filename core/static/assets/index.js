@@ -299,6 +299,17 @@ function SettingsField(props) {
     return _el$1;
   })();
 }
+function CustomSettingsOverride(props) {
+  const CustomSettingsComponent = props.component;
+  return createComponent(CustomSettingsComponent, {
+    get values() {
+      return props.values;
+    },
+    get onSave() {
+      return props.onSave;
+    }
+  });
+}
 function SettingsForm(props) {
   const initialValues = createMemo(() => buildSettingsValues(props.schema, props.values));
   const [values, setValues] = createSignal(initialValues());
@@ -383,15 +394,15 @@ function SettingsForm(props) {
         get fallback() {
           return _tmpl$13$1();
         },
-        children: (loadedModule) => {
-          const CustomSettingsComponent = loadedModule().default;
-          return createComponent(CustomSettingsComponent, {
-            get values() {
-              return values();
-            },
-            onSave: saveValues
-          });
-        }
+        children: (loadedModule) => createComponent(CustomSettingsOverride, {
+          get component() {
+            return loadedModule().default;
+          },
+          get values() {
+            return values();
+          },
+          onSave: saveValues
+        })
       });
     }
   });
