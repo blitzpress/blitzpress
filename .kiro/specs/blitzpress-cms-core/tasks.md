@@ -280,15 +280,15 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Register at least one action hook and one filter hook
     - _Requirements: 15.2, 15.3, 15.4_
 
-- [ ] 18. Implement example plugin frontend (`example-plugin/frontend/`)
-  - [ ] 18.1 Create example plugin frontend structure
+- [x] 18. Implement example plugin frontend (`example-plugin/frontend/`)
+  - [x] 18.1 Create example plugin frontend structure
     - Create SolidJS project with `package.json`, `vite.config.ts` (using `@blitzpress/vite-plugin`), `tsconfig.json`
     - Create `src/index.ts` calling `registerPlugin()` from `@blitzpress/plugin-sdk`
     - Register at least one page via `registrar.pages.add()`
     - Add at least one frontend filter hook
     - _Requirements: 15.5, 15.6_
 
-  - [ ] 18.2 Create example plugin components
+  - [x] 18.2 Create example plugin components
     - Create `src/pages/Home.tsx` as example page component
     - Demonstrate widget registration (optional)
     - Demonstrate custom settings component (optional)

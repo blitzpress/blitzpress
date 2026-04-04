@@ -1,0 +1,82 @@
+.example-plugin-home {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.example-plugin-hero,
+.example-plugin-panel {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.78);
+  padding: 1.5rem;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2);
+}
+
+.example-plugin-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.example-plugin-hero h3,
+.example-plugin-panel h4 {
+  margin: 0.35rem 0 0.75rem;
+}
+
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  color: #93c5fd;
+}
+
+.status-badge {
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  background: rgba(59, 130, 246, 0.18);
+  color: #bfdbfe;
+  font-size: 0.85rem;
+}
+
+.example-plugin-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.status-list {
+  margin: 0;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.status-list div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.status-list dt {
+  color: #93c5fd;
+  font-size: 0.85rem;
+}
+
+.status-list dd {
+  margin: 0;
+}
+
+.menu-preview {
+  margin: 1rem 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.menu-preview span,
+.menu-preview p {
+  display: block;
+  margin: 0.2rem 0 0;
+  color: #cbd5e1;
+}
