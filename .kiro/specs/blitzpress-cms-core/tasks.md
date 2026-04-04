@@ -6,7 +6,7 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
 
 ## Tasks
 
-- [ ] 1. Set up monorepo structure and Go workspace
+- [x] 1. Set up monorepo structure and Go workspace
   - Create root directory structure: `core/`, `plugin-sdk/`, `manager/`, `example-plugin/`, `build/`, `scripts/`
   - Create `go.work` file listing all four modules as workspace members (Go 1.24+)
   - Create `go.mod` files for each module with appropriate module paths
