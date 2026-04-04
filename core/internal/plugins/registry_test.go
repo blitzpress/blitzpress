@@ -128,7 +128,7 @@ func TestPluginRegistryDiscoverLoadAndMountRoutes(t *testing.T) {
 	}
 }
 
-func TestPluginRegistryFiresPluginLoadedHooksInDiscoveryOrder(t *testing.T) {
+func TestPluginRegistryFiresLifecycleHooksInDiscoveryOrder(t *testing.T) {
 	t.Parallel()
 
 	db := newSettingsTestDB(t, "plugin_registry_hook_order")
@@ -151,8 +151,16 @@ func TestPluginRegistryFiresPluginLoadedHooksInDiscoveryOrder(t *testing.T) {
 
 	registry := NewPluginRegistry(db, nil)
 	var sequence []string
+	registry.Hooks().AddAction("core.booting", func(ctx *pluginsdk.HookContext, args ...any) error {
+		sequence = append(sequence, "core.booting")
+		return nil
+	})
 	registry.Hooks().AddAction("plugin.loaded", func(ctx *pluginsdk.HookContext, args ...any) error {
-		sequence = append(sequence, ctx.PluginID)
+		sequence = append(sequence, "plugin.loaded:"+ctx.PluginID)
+		return nil
+	})
+	registry.Hooks().AddAction("core.ready", func(ctx *pluginsdk.HookContext, args ...any) error {
+		sequence = append(sequence, "core.ready")
 		return nil
 	})
 
@@ -160,9 +168,50 @@ func TestPluginRegistryFiresPluginLoadedHooksInDiscoveryOrder(t *testing.T) {
 		t.Fatalf("DiscoverAndLoad() error = %v", err)
 	}
 
-	want := []string{"alpha-plugin", "beta-plugin"}
+	want := []string{"core.booting", "plugin.loaded:alpha-plugin", "plugin.loaded:beta-plugin", "core.ready"}
 	if !reflect.DeepEqual(sequence, want) {
-		t.Fatalf("expected plugin.loaded sequence %v, got %v", want, sequence)
+		t.Fatalf("expected lifecycle sequence %v, got %v", want, sequence)
+	}
+}
+
+func TestPluginRegistryStopsWhenCoreBootingHookFails(t *testing.T) {
+	t.Parallel()
+
+	db := newSettingsTestDB(t, "plugin_registry_booting_failure")
+	pluginsDir := t.TempDir()
+	buildRegistryPlugin(t, pluginsDir, registryPluginFixture{
+		id:         "example-plugin",
+		name:       "Example Plugin",
+		version:    "1.0.0",
+		sdkVersion: pluginsdk.SDKVersion,
+		source:     simpleRegistryPluginSource("example-plugin", "Example Plugin", "1.0.0"),
+	})
+
+	registry := NewPluginRegistry(db, nil)
+	var readyCalled bool
+	registry.Hooks().AddAction("core.booting", func(ctx *pluginsdk.HookContext, args ...any) error {
+		return errors.New("boot failed")
+	})
+	registry.Hooks().AddAction("core.ready", func(ctx *pluginsdk.HookContext, args ...any) error {
+		readyCalled = true
+		return nil
+	})
+
+	err := registry.DiscoverAndLoad(pluginsDir)
+	if err == nil {
+		t.Fatal("expected core.booting failure")
+	}
+
+	if !errors.Is(err, ErrCoreBootingHook) {
+		t.Fatalf("expected ErrCoreBootingHook, got %v", err)
+	}
+
+	if readyCalled {
+		t.Fatal("expected core.ready not to fire after core.booting failure")
+	}
+
+	if _, ok := registry.GetPlugin("example-plugin"); ok {
+		t.Fatal("expected no plugins to be loaded after core.booting failure")
 	}
 }
 

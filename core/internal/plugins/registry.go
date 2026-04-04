@@ -20,6 +20,11 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	ErrCoreBootingHook = errors.New("core.booting hook failed")
+	ErrCoreReadyHook   = errors.New("core.ready hook failed")
+)
+
 type PluginRegistry struct {
 	plugins map[string]*LoadedPlugin
 	hooks   *HookEngine
@@ -55,6 +60,10 @@ func (r *PluginRegistry) EventBus() *EventBusImpl {
 }
 
 func (r *PluginRegistry) DiscoverAndLoad(pluginsDir string) error {
+	if err := r.hooks.DoAction(&pluginsdk.HookContext{}, "core.booting"); err != nil {
+		return fmt.Errorf("%w: %w", ErrCoreBootingHook, err)
+	}
+
 	discovered, discoveryErrors := Discover(pluginsDir)
 	var errs []error
 
@@ -121,6 +130,12 @@ func (r *PluginRegistry) DiscoverAndLoad(pluginsDir string) error {
 			r.logger.Error("plugin.loaded hook failed", "plugin_id", loaded.Manifest.ID, "error", err)
 			errs = append(errs, err)
 		}
+	}
+
+	if err := r.hooks.DoAction(&pluginsdk.HookContext{}, "core.ready"); err != nil {
+		err = fmt.Errorf("%w: %w", ErrCoreReadyHook, err)
+		r.logger.Error("core.ready hook failed", "error", err)
+		errs = append(errs, err)
 	}
 
 	return errors.Join(errs...)

@@ -131,14 +131,14 @@ func newCoreApplication(cfg *config.AppConfig, logger *slog.Logger) (*coreApplic
 	app.Use(fiberrecover.New())
 
 	registry := plugins.NewPluginRegistry(db, logger)
-	if err := registry.Hooks().DoAction(&pluginsdk.HookContext{}, "core.booting"); err != nil {
-		registry.EventBus().Stop()
-		closeDatabase(db)
-		return nil, fmt.Errorf("fire core.booting hook: %w", err)
-	}
-
 	if err := registry.DiscoverAndLoad(cfg.PluginsDir); err != nil {
-		logger.Error("plugin discovery completed with errors", "error", err)
+		if errors.Is(err, plugins.ErrCoreBootingHook) {
+			registry.EventBus().Stop()
+			closeDatabase(db)
+			return nil, err
+		}
+
+		logger.Error("plugin lifecycle completed with errors", "error", err)
 	}
 
 	apiRouter := app.Group("/api")
@@ -149,10 +149,6 @@ func newCoreApplication(cfg *config.AppConfig, logger *slog.Logger) (*coreApplic
 	apiRouter.Put("/admin/plugins/:id/settings", api.PluginSettingsPutHandler(registry, db))
 
 	app.Use(newSPAHandler(staticAssets).Handle)
-
-	if err := registry.Hooks().DoAction(&pluginsdk.HookContext{}, "core.ready"); err != nil {
-		logger.Error("core.ready hook failed", "error", err)
-	}
 
 	return &coreApplication{
 		config:   cfg,
