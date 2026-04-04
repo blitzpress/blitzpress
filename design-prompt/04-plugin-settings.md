@@ -1,6 +1,6 @@
 # BlitzPress Plugin Settings Prompt
 
-Use the UI kit defined in `00-design-system-uikit.md` and the shell from `01-admin-shell-navigation.md`.
+Use the UI kit defined in `00-design-system-uikit.md` (Minimalist Executive UI Kit) and the shell from `01-admin-shell-navigation.md`.
 
 ## Goal
 
@@ -8,61 +8,36 @@ Design the **Plugin Settings** page pattern for BlitzPress at `/admin/plugins/{i
 
 ## Product context
 
-Plugin settings are schema-driven. The system supports fields like:
-- string
-- text
-- number
-- boolean
-- select
-- color
-- url
-- email
-- custom component slot
-
-A plugin may also replace the default generated form with a custom settings component.
+Plugin settings are schema-driven, supporting various input types.
 
 ## Page objectives
 
 The page should:
-- make schema-driven settings feel premium, not generic
-- support long forms and multiple sections
-- clearly communicate save/dirty/success/error states
-- handle both simple forms and plugin-defined custom content gracefully
+- make schema-driven settings feel like a premium software experience
+- use generous spacing between form groups
+- clearly communicate save/dirty/success/error states with subtle, elegant UI elements
 
 ## What to design
 
 Create a reusable settings page pattern with:
-- plugin identity block in the header
-- section navigation or section grouping
-- field layout rules
-- field descriptions/help text
-- inline validation
-- sticky save bar or equally strong save pattern
-- custom component area treatment
+- clean plugin identity block in the header
+- spacious field layout rules
+- inputs featuring 4-8px border radius, subtle borders, and crisp typography
+- Electric Blue (`#0052FF`) focus states
+- sticky save bar or primary action button
+- elegant validation errors
 
 ## Required states
 
 Show:
 - default auto-generated settings form
-- a section containing mixed field types
-- custom component region replacing part or all of the standard form
-- loading state while schema/values load
-- validation error state
-- saved state
-- failed-save state
-- empty state when a plugin has no configurable settings
-
-## Responsive requirements
-
-Show how the page behaves for:
-- two-column desktop forms if appropriate
-- single-column tablet/mobile fallback
-- sticky actions that remain usable on small screens
+- custom component area treatment
+- focus and active states for inputs
+- saved/success state
 
 ## Deliverables
 
 Provide:
 - main plugin settings page
-- state variations
+- input state variations
 - responsive adaptations
-- annotation for schema-driven rendering and custom-component override behavior
