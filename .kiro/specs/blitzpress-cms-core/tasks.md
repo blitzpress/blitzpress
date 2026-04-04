@@ -308,15 +308,15 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Test custom component integration
     - _Requirements: 12.4, 12.8, 12.9_
 
-- [ ] 20. Implement build system (`scripts/`)
-  - [ ] 20.1 Create core build script
+- [x] 20. Implement build system (`scripts/`)
+  - [x] 20.1 Create core build script
     - Create `scripts/build-core.sh` to build SolidJS frontend and Go binary
     - Build frontend: `cd core/frontend && bun install && bun run build`
     - Copy `dist/` to `core/static/` for embedding
     - Compile Go binary: `cd core && go build -o ../build/blitzpress`
     - _Requirements: 13.1, 13.5_
 
-  - [ ] 20.2 Create plugin build script
+  - [x] 20.2 Create plugin build script
     - Create `scripts/build-plugin.sh` accepting plugin directory name
     - Build plugin frontend if it exists
     - Create output directory `build/plugins/{id}/`
@@ -324,11 +324,11 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Compile `.so`: `go build -buildvcs=false -buildmode=plugin -o build/plugins/{id}/plugin.so`
     - _Requirements: 13.2, 13.4, 13.6_
 
-  - [ ] 20.3 Create build-all script
+  - [x] 20.3 Create build-all script
     - Create `scripts/build-all.sh` to build all plugins then core
     - _Requirements: 13.3_
 
-  - [ ] 20.4 Test build scripts
+  - [x] 20.4 Test build scripts
     - Test core build produces working binary
     - Test plugin build produces valid `.so` files
     - Test build-all script completes successfully
