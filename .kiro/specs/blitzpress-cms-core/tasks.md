@@ -108,8 +108,8 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Test hook removal by ID
     - _Requirements: 3.3, 3.4, 3.5, 3.6, 3.7_
 
-- [ ] 8. Implement event bus (`core/internal/plugins/eventbus.go`)
-  - [ ] 8.1 Create EventBus implementation
+- [x] 8. Implement event bus (`core/internal/plugins/eventbus.go`)
+  - [x] 8.1 Create EventBus implementation
     - Implement `EventBusImpl` with buffered channel and worker goroutines
     - Implement `Publish()` for async event dispatch (non-blocking)
     - Implement `Subscribe()` and `Unsubscribe()` for handler management
@@ -119,7 +119,7 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Use default 4 workers with buffer size 256
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 17.6_
 
-  - [ ] 8.2 Write unit tests for event bus
+  - [x] 8.2 Write unit tests for event bus
     - Test async event publishing (non-blocking)
     - Test subscriber notification
     - Test handler error isolation
