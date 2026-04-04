@@ -47,6 +47,7 @@ export async function loadPlugins(options: PluginLoaderOptions = {}): Promise<Pl
   const descriptors = await fetchPluginDescriptors(fetchImpl);
 
   const summary: PluginLoadSummary = {
+    plugins: descriptors.map((descriptor) => ({ ...descriptor })),
     discovered: descriptors.length,
     loaded: [],
     failed: [],

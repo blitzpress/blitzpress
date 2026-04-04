@@ -19,7 +19,7 @@ export interface PluginListResponse {
   plugins: PluginFrontendDescriptor[];
 }
 
-export type ComponentLoader<TProps extends Record<string, unknown> = Record<string, never>> = () => Promise<{
+export type ComponentLoader<TProps extends object = Record<string, never>> = () => Promise<{
   default: Component<TProps>;
 }>;
 
@@ -28,7 +28,53 @@ export interface FieldComponentProps<TValue = unknown> {
   onChange: (value: TValue) => void;
 }
 
-export type FieldComponent<TValue = unknown> = Component<FieldComponentProps<TValue>>;
+export type FieldComponent<TValue = any> = Component<FieldComponentProps<TValue>>;
+
+export interface SettingsSelectOption {
+  value: string;
+  label: string;
+}
+
+export interface SettingsFieldDefinition {
+  id: string;
+  type: string;
+  label: string;
+  description?: string;
+  default?: unknown;
+  required?: boolean;
+  min?: number;
+  max?: number;
+  options?: SettingsSelectOption[];
+  component?: string;
+}
+
+export interface SettingsSectionDefinition {
+  id: string;
+  title: string;
+  fields: SettingsFieldDefinition[];
+}
+
+export interface SettingsSchema {
+  sections: SettingsSectionDefinition[];
+}
+
+export type SettingsValues = Record<string, unknown>;
+export type SaveSettingsHandler = (values: SettingsValues) => void | Promise<void>;
+
+export interface SettingsComponentProps {
+  values: SettingsValues;
+  onSave: SaveSettingsHandler;
+}
+
+export interface SettingsFormProps extends SettingsComponentProps {
+  pluginId: string;
+  schema: SettingsSchema;
+}
+
+export interface PluginSettingsResponse {
+  schema: SettingsSchema | null;
+  values: SettingsValues;
+}
 
 export interface PageDefinition {
   id: string;
@@ -102,7 +148,7 @@ export interface FrontendRegistrar {
   hooks: FrontendHookEngine;
   events: FrontendEventBus;
   settings: {
-    setCustomComponent(loader: ComponentLoader): void;
+    setCustomComponent(loader: ComponentLoader<SettingsComponentProps>): void;
     addFieldComponent(id: string, component: FieldComponent): void;
   };
 }
@@ -111,7 +157,7 @@ export interface PluginRuntimeState {
   plugins: RegisteredPlugin[];
   pages: RegisteredPage[];
   widgets: RegisteredWidget[];
-  settingsComponents: Record<string, ComponentLoader>;
+  settingsComponents: Record<string, ComponentLoader<SettingsComponentProps>>;
   fieldComponents: Record<string, FieldComponent>;
 }
 
@@ -121,6 +167,7 @@ export interface PluginLoadFailure {
 }
 
 export interface PluginLoadSummary {
+  plugins: PluginFrontendDescriptor[];
   discovered: number;
   loaded: string[];
   failed: PluginLoadFailure[];

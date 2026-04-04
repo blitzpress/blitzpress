@@ -7,7 +7,7 @@
     "build": "bun run build:app && bun run build:modules",
     "build:app": "bunx vite build --mode app",
     "build:modules": "bunx vite build --mode modules",
-    "test": "bun test",
+    "test": "bun test --preload ./src/test/setup.ts",
     "typecheck": "bunx tsc --noEmit"
   },
   "dependencies": {

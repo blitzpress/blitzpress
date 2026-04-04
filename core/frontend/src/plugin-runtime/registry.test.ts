@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import type { Component } from "solid-js";
+import type { FieldComponentProps, SettingsComponentProps } from "./types";
 
 import {
   getRuntimeSnapshot,
@@ -15,6 +16,8 @@ afterEach(() => {
 describe("frontend plugin registry", () => {
   test("registers plugin pages, widgets, and settings components", () => {
     const DummyComponent: Component = () => null;
+    const DummySettingsComponent: Component<SettingsComponentProps> = () => null;
+    const DummyFieldComponent: Component<FieldComponentProps> = () => null;
 
     registerPlugin(
       {
@@ -36,8 +39,8 @@ describe("frontend plugin registry", () => {
           component: async () => ({ default: DummyComponent }),
         });
 
-        registrar.settings.setCustomComponent(async () => ({ default: DummyComponent }));
-        registrar.settings.addFieldComponent("example-plugin.color", DummyComponent);
+        registrar.settings.setCustomComponent(async () => ({ default: DummySettingsComponent }));
+        registrar.settings.addFieldComponent("example-plugin.color", DummyFieldComponent);
       },
     );
 

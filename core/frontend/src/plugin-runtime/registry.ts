@@ -11,6 +11,7 @@ import type {
   RegisteredPage,
   RegisteredPlugin,
   RegisteredWidget,
+  SettingsComponentProps,
 } from "./types";
 
 function createInitialState(): PluginRuntimeState {
@@ -85,14 +86,14 @@ type BufferedRegistrar = {
   registrar: FrontendRegistrar;
   pages: RegisteredPage[];
   widgets: RegisteredWidget[];
-  settingsComponent?: ComponentLoader;
+  settingsComponent?: ComponentLoader<SettingsComponentProps>;
   fieldComponents: Record<string, FieldComponent>;
 };
 
 function createBufferedRegistrar(manifest: PluginManifest): BufferedRegistrar {
   const pages: RegisteredPage[] = [];
   const widgets: RegisteredWidget[] = [];
-  let settingsComponent: ComponentLoader | undefined;
+  let settingsComponent: ComponentLoader<SettingsComponentProps> | undefined;
   const fieldComponents: Record<string, FieldComponent> = {};
 
   const registrar: FrontendRegistrar = {

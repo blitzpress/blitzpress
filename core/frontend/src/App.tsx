@@ -9,8 +9,14 @@ import {
 } from "solid-js";
 import { runtimeState } from "@blitzpress/plugin-sdk";
 
+import PluginSettingsView from "./components/PluginSettingsView";
 import { loadPlugins } from "./plugin-runtime/loader";
-import type { PluginLoadSummary, RegisteredPage, RegisteredWidget } from "./plugin-runtime/types";
+import type {
+  PluginFrontendDescriptor,
+  PluginLoadSummary,
+  RegisteredPage,
+  RegisteredWidget,
+} from "./plugin-runtime/types";
 
 type LoadStatus =
   | { state: "idle" }
@@ -21,6 +27,15 @@ type LoadStatus =
 function normalizePath(pathname: string): string {
   const normalized = pathname.replace(/\/+$/, "") || "/";
   return normalized.startsWith("/") ? normalized : `/${normalized}`;
+}
+
+function pluginSettingsPath(pluginId: string): string {
+  return `/admin/plugins/${pluginId}/settings`;
+}
+
+function parsePluginSettingsPath(pathname: string): string | undefined {
+  const match = normalizePath(pathname).match(/^\/admin\/plugins\/([^/]+)\/settings$/);
+  return match ? decodeURIComponent(match[1]) : undefined;
 }
 
 function createLocationSignal() {
@@ -119,7 +134,17 @@ export default function App() {
 
   const pages = createMemo(() => runtimeState.pages);
   const widgets = createMemo(() => runtimeState.widgets);
+  const discoveredPlugins = createMemo<PluginFrontendDescriptor[]>(() => {
+    const status = loadStatus();
+    return status.state === "ready" ? status.summary.plugins : [];
+  });
   const activePage = createMemo(() => pages().find((page) => normalizePath(page.path) === pathname()));
+  const activeSettingsPluginID = createMemo(() => parsePluginSettingsPath(pathname()));
+  const activeSettingsPlugin = createMemo(() =>
+    activeSettingsPluginID()
+      ? discoveredPlugins().find((plugin) => plugin.id === activeSettingsPluginID())
+      : undefined,
+  );
 
   const activePath = createMemo(() => pathname());
 
@@ -162,11 +187,33 @@ export default function App() {
           </For>
         </section>
 
+        <Show when={discoveredPlugins().length > 0}>
+          <section class="nav-section">
+            <h2>Plugin settings</h2>
+            <For each={discoveredPlugins()}>
+              {(plugin) => (
+                <a
+                  class={`nav-link${activePath() === pluginSettingsPath(plugin.id) ? " active" : ""}`}
+                  href={pluginSettingsPath(plugin.id)}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    navigate(pluginSettingsPath(plugin.id));
+                  }}
+                >
+                  {plugin.name} settings
+                </a>
+              )}
+            </For>
+          </section>
+        </Show>
+
         <section class="status-card">
           <h2>Runtime status</h2>
           <Show when={loadStatus().state === "ready"} fallback={<p>Loading plugin frontends…</p>}>
             <p>
-              Loaded {(loadStatus() as { state: "ready"; summary: PluginLoadSummary }).summary.loaded.length} frontend bundle(s).
+              Discovered {(loadStatus() as { state: "ready"; summary: PluginLoadSummary }).summary.plugins.length} plugin(s)
+              and loaded {(loadStatus() as { state: "ready"; summary: PluginLoadSummary }).summary.loaded.length} frontend
+              bundle(s).
             </p>
           </Show>
           <Show when={loadStatus().state === "error"}>
@@ -181,8 +228,20 @@ export default function App() {
       </aside>
 
       <main class="main-content">
-        <Show when={activePage()} fallback={<Dashboard status={loadStatus()} widgets={widgets()} />}>
-          {(page) => <PluginPage page={page()} />}
+        <Show
+          when={activeSettingsPluginID()}
+          fallback={
+            <Show when={activePage()} fallback={<Dashboard status={loadStatus()} widgets={widgets()} />}>
+              {(page) => <PluginPage page={page()} />}
+            </Show>
+          }
+        >
+          {(pluginId) => (
+            <PluginSettingsView
+              pluginId={pluginId()}
+              pluginName={activeSettingsPlugin()?.name}
+            />
+          )}
         </Show>
       </main>
     </div>
@@ -222,6 +281,7 @@ function Dashboard(props: { status: LoadStatus; widgets: RegisteredWidget[] }) {
           <li>Inject plugin stylesheets before each frontend module import.</li>
           <li>Load plugin ES modules through the browser import map.</li>
           <li>Let plugins register pages, widgets, hooks, events, and settings extensions.</li>
+          <li>Auto-render plugin settings from schema or a plugin-provided custom settings component.</li>
         </ol>
       </section>
 
