@@ -166,6 +166,71 @@ func TestPluginRegistryFiresPluginLoadedHooksInDiscoveryOrder(t *testing.T) {
 	}
 }
 
+func TestPluginRegistryMountRoutesServesFrontendBuildAssets(t *testing.T) {
+	t.Parallel()
+
+	db := newSettingsTestDB(t, "plugin_registry_frontend_assets")
+	pluginsDir := t.TempDir()
+
+	buildRegistryPlugin(t, pluginsDir, registryPluginFixture{
+		id:          "example-plugin",
+		name:        "Example Plugin",
+		version:     "1.0.0",
+		sdkVersion:  pluginsdk.SDKVersion,
+		hasFrontend: true,
+		source:      simpleRegistryPluginSource("example-plugin", "Example Plugin", "1.0.0"),
+		buildFiles: map[string]string{
+			"frontend/assets/index.js":  `console.log("example frontend");`,
+			"frontend/assets/index.css": ".example{color:red;}",
+		},
+	})
+
+	registry := NewPluginRegistry(db, nil)
+	if err := registry.DiscoverAndLoad(pluginsDir); err != nil {
+		t.Fatalf("DiscoverAndLoad() error = %v", err)
+	}
+
+	app := fiber.New()
+	api := app.Group("/api")
+	registry.MountRoutes(api, app)
+
+	jsResp, err := app.Test(httptest.NewRequest(http.MethodGet, "/plugins/example-plugin/assets/index.js", nil))
+	if err != nil {
+		t.Fatalf("frontend js app.Test() error = %v", err)
+	}
+
+	jsBody, err := io.ReadAll(jsResp.Body)
+	if err != nil {
+		t.Fatalf("reading frontend js response body failed: %v", err)
+	}
+
+	if jsResp.StatusCode != http.StatusOK {
+		t.Fatalf("expected frontend js status %d, got %d", http.StatusOK, jsResp.StatusCode)
+	}
+
+	if string(jsBody) != `console.log("example frontend");` {
+		t.Fatalf("expected frontend js response %q, got %q", `console.log("example frontend");`, string(jsBody))
+	}
+
+	cssResp, err := app.Test(httptest.NewRequest(http.MethodGet, "/plugins/example-plugin/assets/index.css", nil))
+	if err != nil {
+		t.Fatalf("frontend css app.Test() error = %v", err)
+	}
+
+	cssBody, err := io.ReadAll(cssResp.Body)
+	if err != nil {
+		t.Fatalf("reading frontend css response body failed: %v", err)
+	}
+
+	if cssResp.StatusCode != http.StatusOK {
+		t.Fatalf("expected frontend css status %d, got %d", http.StatusOK, cssResp.StatusCode)
+	}
+
+	if string(cssBody) != ".example{color:red;}" {
+		t.Fatalf("expected frontend css response %q, got %q", ".example{color:red;}", string(cssBody))
+	}
+}
+
 func TestPluginRegistryStoresFailedPluginsAndContinuesLoading(t *testing.T) {
 	t.Parallel()
 
@@ -230,8 +295,10 @@ type registryPluginFixture struct {
 	name        string
 	version     string
 	sdkVersion  string
+	hasFrontend bool
 	source      string
 	staticFiles map[string]string
+	buildFiles  map[string]string
 }
 
 func buildRegistryPlugin(t *testing.T, pluginsDir string, fixture registryPluginFixture) string {
@@ -251,9 +318,17 @@ require github.com/BlitzPress/BlitzPress/plugin-sdk v0.0.0
 
 replace github.com/BlitzPress/BlitzPress/plugin-sdk => %s
 `, testModuleName(t, pluginDir), pluginSDKDir(t)))
-	writeFile(t, filepath.Join(pluginDir, "plugin.json"), pluginManifestJSON(fixture.id, fixture.name, fixture.version, fixture.sdkVersion))
+	writeFile(t, filepath.Join(pluginDir, "plugin.json"), pluginManifestJSON(fixture))
 
 	for name, contents := range fixture.staticFiles {
+		path := filepath.Join(pluginDir, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("MkdirAll(%q) error = %v", filepath.Dir(path), err)
+		}
+
+		writeFile(t, path, contents)
+	}
+	for name, contents := range fixture.buildFiles {
 		path := filepath.Join(pluginDir, filepath.FromSlash(name))
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			t.Fatalf("MkdirAll(%q) error = %v", filepath.Dir(path), err)
@@ -273,15 +348,24 @@ replace github.com/BlitzPress/BlitzPress/plugin-sdk => %s
 	return pluginDir
 }
 
-func pluginManifestJSON(id, name, version, sdkVersion string) string {
+func pluginManifestJSON(fixture registryPluginFixture) string {
+	frontendEntry := ""
+	frontendStyle := ""
+	if fixture.hasFrontend {
+		frontendEntry = "frontend/assets/index.js"
+		frontendStyle = "frontend/assets/index.css"
+	}
+
 	return fmt.Sprintf(`{
   "schema_version": 1,
   "id": %q,
   "name": %q,
   "version": %q,
   "sdk_version": %q,
-  "has_frontend": false
-}`, id, name, version, sdkVersion)
+  "has_frontend": %t,
+  "frontend_entry": %q,
+  "frontend_style": %q
+}`, fixture.id, fixture.name, fixture.version, fixture.sdkVersion, fixture.hasFrontend, frontendEntry, frontendStyle)
 }
 
 func successfulRegistryPluginSource(id, name, version string) string {

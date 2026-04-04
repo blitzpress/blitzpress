@@ -57,8 +57,8 @@ func CMSPluginsHandler(registry *plugins.PluginRegistry) fiber.Handler {
 				Name:          plugin.Manifest.Name,
 				Version:       plugin.Manifest.Version,
 				HasFrontend:   plugin.ManifestFile.HasFrontend,
-				FrontendEntry: plugin.ManifestFile.FrontendEntry,
-				FrontendStyle: plugin.ManifestFile.FrontendStyle,
+				FrontendEntry: normalizePluginFrontendAssetPath(plugin.Manifest.ID, plugin.ManifestFile.FrontendEntry),
+				FrontendStyle: normalizePluginFrontendAssetPath(plugin.Manifest.ID, plugin.ManifestFile.FrontendStyle),
 			})
 		}
 
@@ -335,4 +335,31 @@ func cloneSchema(schema pluginsdk.SettingsSchema) pluginsdk.SettingsSchema {
 	}
 
 	return cloned
+}
+
+func normalizePluginFrontendAssetPath(pluginID, assetPath string) string {
+	trimmedPluginID := strings.TrimSpace(pluginID)
+	trimmedAssetPath := strings.TrimSpace(assetPath)
+	if trimmedPluginID == "" || trimmedAssetPath == "" {
+		return ""
+	}
+
+	publicPrefix := "/plugins/" + trimmedPluginID + "/assets/"
+	if strings.HasPrefix(trimmedAssetPath, publicPrefix) {
+		return trimmedAssetPath
+	}
+
+	cleaned := path.Clean("/" + trimmedAssetPath)
+	cleaned = strings.TrimPrefix(cleaned, "/")
+	if cleaned == "." || cleaned == "" || !fs.ValidPath(cleaned) {
+		return ""
+	}
+
+	cleaned = strings.TrimPrefix(cleaned, "frontend/")
+	cleaned = strings.TrimPrefix(cleaned, "assets/")
+	if cleaned == "" {
+		return ""
+	}
+
+	return publicPrefix + cleaned
 }

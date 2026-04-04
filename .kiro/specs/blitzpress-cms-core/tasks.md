@@ -369,8 +369,8 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Test build command validation
     - _Requirements: 16.2, 16.3, 16.4_
 
-- [ ] 23. Final integration and wiring
-  - [ ] 23.1 Wire all components together
+- [x] 23. Final integration and wiring
+  - [x] 23.1 Wire all components together
     - Verify Go workspace resolves all module references
     - Verify core binary embeds frontend correctly
     - Verify plugin loading works end-to-end
@@ -378,7 +378,7 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Verify hooks, events, and settings work across plugins
     - _Requirements: 1.1, 1.3, 6.2, 8.1, 10.3_
 
-  - [ ] 23.2 Write end-to-end integration tests
+  - [x] 23.2 Write end-to-end integration tests
     - Test full system startup with example plugin
     - Test plugin API routes accessible
     - Test plugin frontend loads in browser

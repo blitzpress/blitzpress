@@ -5,13 +5,14 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
-	"net/http"
+	"mime"
+	"os"
+	"path"
 	"sort"
 	"strings"
 	"sync"
 
 	"github.com/gofiber/fiber/v2"
-	fiberfs "github.com/gofiber/fiber/v2/middleware/filesystem"
 
 	pluginsdk "github.com/BlitzPress/BlitzPress/plugin-sdk"
 	"gorm.io/gorm"
@@ -158,21 +159,13 @@ func (r *PluginRegistry) MountRoutes(api fiber.Router, root fiber.Router) {
 		}
 
 		if len(plugin.Statics) == 0 {
-			continue
+			if !plugin.ManifestFile.HasFrontend {
+				continue
+			}
 		}
 
 		pluginStatic := root.Group("/plugins/" + plugin.Manifest.ID + "/assets")
-		for _, static := range plugin.Statics {
-			mountFS, err := staticSubFS(static)
-			if err != nil {
-				r.logger.Warn("plugin static mount skipped", "plugin_id", plugin.Manifest.ID, "error", err)
-				continue
-			}
-
-			pluginStatic.Use("/", fiberfs.New(fiberfs.Config{
-				Root: http.FS(mountFS),
-			}))
-		}
+		pluginStatic.All("/*", r.servePluginStaticAssets(plugin))
 	}
 }
 
@@ -214,6 +207,90 @@ func staticSubFS(static registeredStatic) (fs.FS, error) {
 	}
 
 	return fs.Sub(static.filesystem, static.stripPrefix)
+}
+
+func (r *PluginRegistry) servePluginStaticAssets(plugin *LoadedPlugin) fiber.Handler {
+	staticMounts := pluginStaticMounts(plugin)
+
+	return func(c *fiber.Ctx) error {
+		if c.Method() != fiber.MethodGet && c.Method() != fiber.MethodHead {
+			return fiber.ErrNotFound
+		}
+
+		assetPath, ok := normalizePluginAssetPath(c.Params("*"))
+		if !ok {
+			return fiber.ErrNotFound
+		}
+
+		for _, staticMount := range staticMounts {
+			contents, err := readPluginStaticFile(staticMount, assetPath)
+			if err == nil {
+				if contentType := mime.TypeByExtension(path.Ext(assetPath)); contentType != "" {
+					c.Set(fiber.HeaderContentType, contentType)
+				}
+
+				return c.Send(contents)
+			}
+
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+
+			r.logger.Error(
+				"plugin static asset lookup failed",
+				"plugin_id", plugin.Manifest.ID,
+				"asset_path", assetPath,
+				"error", err,
+			)
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		return fiber.ErrNotFound
+	}
+}
+
+func pluginStaticMounts(plugin *LoadedPlugin) []registeredStatic {
+	mounts := make([]registeredStatic, 0, len(plugin.Statics)+1)
+	if plugin.ManifestFile.HasFrontend && strings.TrimSpace(plugin.Path) != "" {
+		mounts = append(mounts, registeredStatic{
+			pluginID:    plugin.Manifest.ID,
+			filesystem:  os.DirFS(plugin.Path),
+			stripPrefix: "frontend/assets",
+		})
+	}
+
+	mounts = append(mounts, plugin.Statics...)
+	return mounts
+}
+
+func normalizePluginAssetPath(assetPath string) (string, bool) {
+	cleaned := path.Clean("/" + strings.TrimSpace(assetPath))
+	cleaned = strings.TrimPrefix(cleaned, "/")
+	if cleaned == "." || cleaned == "" {
+		return "", false
+	}
+	if !fs.ValidPath(cleaned) {
+		return "", false
+	}
+
+	return cleaned, true
+}
+
+func readPluginStaticFile(static registeredStatic, name string) ([]byte, error) {
+	mountFS, err := staticSubFS(static)
+	if err != nil {
+		return nil, err
+	}
+
+	info, err := fs.Stat(mountFS, name)
+	if err != nil {
+		return nil, err
+	}
+	if info.IsDir() {
+		return nil, fs.ErrNotExist
+	}
+
+	return fs.ReadFile(mountFS, name)
 }
 
 type scopedHookRegistry struct {

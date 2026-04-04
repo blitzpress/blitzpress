@@ -29,8 +29,8 @@ func TestCMSPluginsHandlerReturnsLoadedPlugins(t *testing.T) {
 			name:          "Example Plugin",
 			version:       "1.2.3",
 			hasFrontend:   true,
-			frontendEntry: "/plugins/example-plugin/assets/index.js",
-			frontendStyle: "/plugins/example-plugin/assets/index.css",
+			frontendEntry: "frontend/assets/index.js",
+			frontendStyle: "frontend/assets/index.css",
 			source:        settingsPluginSource("example-plugin", "Example Plugin", "1.2.3"),
 		},
 	}, nil)
@@ -62,6 +62,12 @@ func TestCMSPluginsHandlerReturnsLoadedPlugins(t *testing.T) {
 	}
 	if !plugin.HasFrontend || plugin.FrontendEntry == "" || plugin.FrontendStyle == "" {
 		t.Fatalf("expected frontend fields to be populated, got %#v", plugin)
+	}
+	if plugin.FrontendEntry != "/plugins/example-plugin/assets/index.js" {
+		t.Fatalf("expected normalized frontend entry path, got %q", plugin.FrontendEntry)
+	}
+	if plugin.FrontendStyle != "/plugins/example-plugin/assets/index.css" {
+		t.Fatalf("expected normalized frontend style path, got %q", plugin.FrontendStyle)
 	}
 }
 
