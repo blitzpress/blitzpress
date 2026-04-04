@@ -1,0 +1,23 @@
+root = "."
+tmp_dir = "tmp/core"
+
+[build]
+  cmd = "./scripts/build-core.sh"
+  bin = "build/blitzpress"
+  entrypoint = ["./build/blitzpress"]
+  include_ext = ["go", "html", "js", "jsx", "ts", "tsx", "css", "so"]
+  exclude_dir = ["core/frontend/node_modules", "core/frontend/packages/vite-plugin/node_modules", "core/frontend/dist", "core/static", "tmp"]
+  include_dir = ["core", "build/plugins"]
+  exclude_regex = ["_test\\.go$", "build/plugins/.+/frontend/assets/.+\\.(js|css)$"]
+  exclude_unchanged = true
+  delay = 1000
+  stop_on_error = true
+  send_interrupt = true
+  kill_delay = "1s"
+
+[misc]
+  clean_on_exit = true
+
+[screen]
+  clear_on_rebuild = true
+  keep_scroll = true

@@ -1,0 +1,18 @@
+root = "."
+tmp_dir = "tmp/example-plugin"
+
+[build]
+  cmd = "./scripts/build-plugin.sh example-plugin"
+  full_bin = "printf 'example-plugin build watcher idle\\n'; sleep infinity"
+  include_ext = ["go", "html", "js", "jsx", "ts", "tsx", "css", "json"]
+  exclude_dir = ["example-plugin/frontend/node_modules", "example-plugin/frontend/dist", "build", "tmp"]
+  include_dir = ["example-plugin"]
+  exclude_regex = ["_test\\.go$"]
+  exclude_unchanged = true
+  delay = 1000
+  stop_on_error = true
+  send_interrupt = true
+  kill_delay = "500ms"
+
+[misc]
+  clean_on_exit = true

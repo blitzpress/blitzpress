@@ -334,14 +334,14 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Test build-all script completes successfully
     - _Requirements: 13.1, 13.2, 13.3_
 
-- [ ] 21. Implement Air hot-reload configuration
-  - [ ] 21.1 Create root Air config
+- [x] 21. Implement Air hot-reload configuration
+  - [x] 21.1 Create root Air config
     - Create `.air.toml` watching `core/` Go files
     - Rebuild SolidJS frontend before Go build
     - Watch `build/plugins/**/*.so` to trigger core restart
     - _Requirements: 14.1, 14.2, 14.4_
 
-  - [ ] 21.2 Create plugin Air config
+  - [x] 21.2 Create plugin Air config
     - Create `example-plugin/.air.toml` watching plugin Go and frontend files
     - Rebuild frontend and recompile `.so` on changes
     - Use sleep-based keep-alive pattern (no persistent binary)
