@@ -74,8 +74,8 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Test error handling for missing/invalid manifests
     - _Requirements: 5.2, 5.5, 5.6_
 
-- [ ] 6. Implement plugin loader (`core/internal/plugins/loader.go`)
-  - [ ] 6.1 Create plugin loading logic
+- [x] 6. Implement plugin loader (`core/internal/plugins/loader.go`)
+  - [x] 6.1 Create plugin loading logic
     - Implement `LoadPlugin()` function using `plugin.Open()`
     - Lookup `Plugin` symbol from `.so` file
     - Validate `Manifest()` matches `plugin.json` fields
@@ -83,7 +83,7 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Return `LoadedPlugin` struct with status ("loaded", "error", "disabled")
     - _Requirements: 6.2, 6.3, 6.5, 6.6_
 
-  - [ ] 6.2 Write unit tests for plugin loader
+  - [x] 6.2 Write unit tests for plugin loader
     - Test symbol lookup and validation
     - Test manifest mismatch detection
     - Test SDK version compatibility checking
