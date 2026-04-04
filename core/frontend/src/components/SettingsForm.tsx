@@ -1,9 +1,11 @@
-import { For, Show, createEffect, createMemo, createResource, createSignal } from "solid-js";
+import { For, Show, createEffect, createMemo, createResource, createSignal, type Component } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import { runtimeState } from "@blitzpress/plugin-sdk";
 
 import type {
   SettingsFieldDefinition,
+  SaveSettingsHandler,
+  SettingsComponentProps,
   SettingsFormProps,
   SettingsSchema,
   SettingsValues,
@@ -214,6 +216,21 @@ function SettingsField(props: {
   );
 }
 
+export function CustomSettingsOverride(props: {
+  component: Component<SettingsComponentProps>;
+  values: SettingsValues;
+  onSave: SaveSettingsHandler;
+}) {
+  const CustomSettingsComponent = props.component;
+
+  return (
+    <CustomSettingsComponent
+      values={props.values}
+      onSave={props.onSave}
+    />
+  );
+}
+
 export default function SettingsForm(props: SettingsFormProps) {
   const initialValues = createMemo(() => buildSettingsValues(props.schema, props.values));
   const [values, setValues] = createSignal<SettingsValues>(initialValues());
@@ -299,16 +316,13 @@ export default function SettingsForm(props: SettingsFormProps) {
           </section>
         }
       >
-        {(loadedModule) => {
-          const CustomSettingsComponent = loadedModule().default;
-
-          return (
-            <CustomSettingsComponent
-              values={values()}
-              onSave={saveValues}
-            />
-          );
-        }}
+        {(loadedModule) => (
+          <CustomSettingsOverride
+            component={loadedModule().default}
+            values={values()}
+            onSave={saveValues}
+          />
+        )}
       </Show>
     </Show>
   );
