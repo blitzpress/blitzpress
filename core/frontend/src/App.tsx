@@ -219,6 +219,7 @@ export default function App() {
           <Show when={loadStatus().state === "error"}>
             <p>{(loadStatus() as { state: "error"; message: string }).message}</p>
           </Show>
+          <PluginLoadFailures status={loadStatus()} />
           <ul class="status-list">
             <li>{runtimeState.plugins.length} registered plugin runtime(s)</li>
             <li>{pages().length} plugin page(s)</li>
@@ -295,25 +296,31 @@ function Dashboard(props: { status: LoadStatus; widgets: RegisteredWidget[] }) {
 }
 
 function EmptyState(props: { status: LoadStatus }) {
-  const failures = () => (props.status.state === "ready" ? props.status.summary.failed : []);
-
   return (
     <section class="empty-state">
       <h2>No plugin widgets registered yet</h2>
       <p>
         Install a plugin frontend and call <code>registerPlugin()</code> to populate the dashboard with widgets and routes.
       </p>
-      <Show when={failures().length > 0}>
-        <ul class="status-list">
-          <For each={failures()}>
-            {(failure) => (
-              <li>
-                {failure.pluginId}: {failure.error}
-              </li>
-            )}
-          </For>
-        </ul>
-      </Show>
+      <PluginLoadFailures status={props.status} />
     </section>
+  );
+}
+
+function PluginLoadFailures(props: { status: LoadStatus }) {
+  const failures = () => (props.status.state === "ready" ? props.status.summary.failed : []);
+
+  return (
+    <Show when={failures().length > 0}>
+      <ul class="status-list">
+        <For each={failures()}>
+          {(failure) => (
+            <li>
+              {failure.pluginId}: {failure.error}
+            </li>
+          )}
+        </For>
+      </ul>
+    </Show>
   );
 }

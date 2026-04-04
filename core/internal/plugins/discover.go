@@ -141,6 +141,9 @@ func validateManifest(manifest PluginManifestFile) error {
 	if manifest.HasFrontend && strings.TrimSpace(manifest.FrontendEntry) == "" {
 		validationErrors = append(validationErrors, fmt.Errorf("frontend_entry is required when has_frontend is true"))
 	}
+	if manifest.HasFrontend && strings.TrimSpace(manifest.FrontendStyle) == "" {
+		validationErrors = append(validationErrors, fmt.Errorf("frontend_style is required when has_frontend is true"))
+	}
 
 	return errors.Join(validationErrors...)
 }

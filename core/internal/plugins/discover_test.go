@@ -12,7 +12,7 @@ func TestDiscoverReturnsValidPlugins(t *testing.T) {
 	t.Parallel()
 
 	pluginsDir := t.TempDir()
-	pluginDir := writePlugin(t, pluginsDir, "example-plugin", validManifestJSON("example-plugin", "1.2.3", "0.1.0", 1, false, ""), true, true)
+	pluginDir := writePlugin(t, pluginsDir, "example-plugin", validManifestJSON("example-plugin", "1.2.3", "0.1.0", 1, false, "", ""), true, true)
 
 	discovered, errs := Discover(pluginsDir)
 
@@ -89,7 +89,7 @@ func TestDiscoverRejectsInvalidSchemaVersion(t *testing.T) {
 	t.Parallel()
 
 	pluginsDir := t.TempDir()
-	writePlugin(t, pluginsDir, "example-plugin", validManifestJSON("example-plugin", "1.2.3", "0.1.0", 2, false, ""), true, true)
+	writePlugin(t, pluginsDir, "example-plugin", validManifestJSON("example-plugin", "1.2.3", "0.1.0", 2, false, "", ""), true, true)
 
 	discovered, errs := Discover(pluginsDir)
 
@@ -104,7 +104,7 @@ func TestDiscoverRejectsNonKebabCaseIDs(t *testing.T) {
 	t.Parallel()
 
 	pluginsDir := t.TempDir()
-	writePlugin(t, pluginsDir, "ExamplePlugin", validManifestJSON("ExamplePlugin", "1.2.3", "0.1.0", 1, false, ""), true, true)
+	writePlugin(t, pluginsDir, "ExamplePlugin", validManifestJSON("ExamplePlugin", "1.2.3", "0.1.0", 1, false, "", ""), true, true)
 
 	discovered, errs := Discover(pluginsDir)
 
@@ -199,7 +199,7 @@ func TestDiscoverRejectsInvalidSemverValues(t *testing.T) {
 			t.Parallel()
 
 			pluginsDir := t.TempDir()
-			writePlugin(t, pluginsDir, "example-plugin", validManifestJSON("example-plugin", tt.version, tt.sdkVersion, 1, false, ""), true, true)
+			writePlugin(t, pluginsDir, "example-plugin", validManifestJSON("example-plugin", tt.version, tt.sdkVersion, 1, false, "", ""), true, true)
 
 			discovered, errs := Discover(pluginsDir)
 
@@ -216,7 +216,7 @@ func TestDiscoverRejectsPluginsWithoutSharedObject(t *testing.T) {
 	t.Parallel()
 
 	pluginsDir := t.TempDir()
-	writePlugin(t, pluginsDir, "example-plugin", validManifestJSON("example-plugin", "1.2.3", "0.1.0", 1, false, ""), true, false)
+	writePlugin(t, pluginsDir, "example-plugin", validManifestJSON("example-plugin", "1.2.3", "0.1.0", 1, false, "", ""), true, false)
 
 	discovered, errs := Discover(pluginsDir)
 
@@ -227,27 +227,69 @@ func TestDiscoverRejectsPluginsWithoutSharedObject(t *testing.T) {
 	assertSingleErrorContains(t, errs, "plugin.so")
 }
 
-func TestDiscoverRequiresFrontendEntryWhenFrontendIsEnabled(t *testing.T) {
+func TestDiscoverRequiresFrontendFieldsWhenFrontendIsEnabled(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		frontendEntry string
+		frontendStyle string
+		wantSubstring string
+	}{
+		{
+			name:          "missing entry",
+			frontendStyle: "frontend/assets/index.css",
+			wantSubstring: "frontend_entry is required",
+		},
+		{
+			name:          "missing style",
+			frontendEntry: "frontend/assets/index.js",
+			wantSubstring: "frontend_style is required",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			pluginsDir := t.TempDir()
+			writePlugin(t, pluginsDir, "frontend-plugin", validManifestJSON("frontend-plugin", "1.2.3", "0.1.0", 1, true, tt.frontendEntry, tt.frontendStyle), true, true)
+
+			discovered, errs := Discover(pluginsDir)
+
+			if len(discovered) != 0 {
+				t.Fatalf("expected no discovered plugins, got %d", len(discovered))
+			}
+
+			assertSingleErrorContains(t, errs, tt.wantSubstring)
+		})
+	}
+}
+
+func TestDiscoverAcceptsFrontendPluginWithEntryAndStyle(t *testing.T) {
 	t.Parallel()
 
 	pluginsDir := t.TempDir()
-	writePlugin(t, pluginsDir, "frontend-plugin", validManifestJSON("frontend-plugin", "1.2.3", "0.1.0", 1, true, ""), true, true)
+	writePlugin(t, pluginsDir, "frontend-plugin", validManifestJSON("frontend-plugin", "1.2.3", "0.1.0", 1, true, "frontend/assets/index.js", "frontend/assets/index.css"), true, true)
 
 	discovered, errs := Discover(pluginsDir)
 
-	if len(discovered) != 0 {
-		t.Fatalf("expected no discovered plugins, got %d", len(discovered))
+	if len(errs) != 0 {
+		t.Fatalf("expected no discovery errors, got %v", errs)
 	}
 
-	assertSingleErrorContains(t, errs, "frontend_entry is required")
+	if len(discovered) != 1 {
+		t.Fatalf("expected 1 discovered plugin, got %d", len(discovered))
+	}
 }
 
 func TestDiscoverContinuesAfterErrors(t *testing.T) {
 	t.Parallel()
 
 	pluginsDir := t.TempDir()
-	validPluginDir := writePlugin(t, pluginsDir, "valid-plugin", validManifestJSON("valid-plugin", "1.2.3", "0.1.0", 1, false, ""), true, true)
-	writePlugin(t, pluginsDir, "invalid-plugin", validManifestJSON("InvalidPlugin", "1.2.3", "0.1.0", 1, false, ""), true, true)
+	validPluginDir := writePlugin(t, pluginsDir, "valid-plugin", validManifestJSON("valid-plugin", "1.2.3", "0.1.0", 1, false, "", ""), true, true)
+	writePlugin(t, pluginsDir, "invalid-plugin", validManifestJSON("InvalidPlugin", "1.2.3", "0.1.0", 1, false, "", ""), true, true)
 
 	discovered, errs := Discover(pluginsDir)
 
@@ -289,7 +331,7 @@ func writeFile(t *testing.T, path, contents string) {
 	}
 }
 
-func validManifestJSON(id, version, sdkVersion string, schemaVersion int, hasFrontend bool, frontendEntry string) string {
+func validManifestJSON(id, version, sdkVersion string, schemaVersion int, hasFrontend bool, frontendEntry, frontendStyle string) string {
 	return fmt.Sprintf(`{
   "schema_version": %d,
   "id": %q,
@@ -297,8 +339,9 @@ func validManifestJSON(id, version, sdkVersion string, schemaVersion int, hasFro
   "version": %q,
   "sdk_version": %q,
   "has_frontend": %t,
-  "frontend_entry": %q
-}`, schemaVersion, id, version, sdkVersion, hasFrontend, frontendEntry)
+  "frontend_entry": %q,
+  "frontend_style": %q
+}`, schemaVersion, id, version, sdkVersion, hasFrontend, frontendEntry, frontendStyle)
 }
 
 func assertSingleErrorContains(t *testing.T, errs []error, want string) {

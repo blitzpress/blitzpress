@@ -30,6 +30,22 @@ function ensureStylesheet(documentRef: Document, href?: string): void {
   documentRef.head.appendChild(link);
 }
 
+function validateFrontendDescriptor(descriptor: PluginFrontendDescriptor): string | null {
+  if (!descriptor.has_frontend) {
+    return null;
+  }
+
+  if (!descriptor.frontend_entry) {
+    return "plugin manifest is missing frontend_entry";
+  }
+
+  if (!descriptor.frontend_style) {
+    return "plugin manifest is missing frontend_style";
+  }
+
+  return null;
+}
+
 async function fetchPluginDescriptors(fetchImpl: PluginFetch): Promise<PluginFrontendDescriptor[]> {
   const response = await fetchImpl("/api/cms/plugins");
   if (!response.ok) {
@@ -54,14 +70,27 @@ export async function loadPlugins(options: PluginLoaderOptions = {}): Promise<Pl
   };
 
   for (const descriptor of descriptors) {
-    if (!descriptor.has_frontend || !descriptor.frontend_entry) {
+    if (!descriptor.has_frontend) {
       continue;
     }
 
-    ensureStylesheet(documentRef, descriptor.frontend_style);
+    const validationError = validateFrontendDescriptor(descriptor);
+    if (validationError) {
+      summary.failed.push({
+        pluginId: descriptor.id,
+        error: validationError,
+      });
+      console.error(`invalid plugin frontend manifest: ${descriptor.id}`, validationError);
+      continue;
+    }
+
+    const frontendEntry = descriptor.frontend_entry!;
+    const frontendStyle = descriptor.frontend_style!;
+
+    ensureStylesheet(documentRef, frontendStyle);
 
     try {
-      await importer(descriptor.frontend_entry);
+      await importer(frontendEntry);
       summary.loaded.push(descriptor.id);
     } catch (error) {
       summary.failed.push({
