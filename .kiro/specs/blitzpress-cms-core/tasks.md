@@ -89,8 +89,8 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Test SDK version compatibility checking
     - _Requirements: 6.3, 6.5, 6.6_
 
-- [ ] 7. Implement hook engine (`core/internal/plugins/hooks.go`)
-  - [ ] 7.1 Create HookEngine implementation
+- [x] 7. Implement hook engine (`core/internal/plugins/hooks.go`)
+  - [x] 7.1 Create HookEngine implementation
     - Implement `HookEngine` struct with sorted slices for actions and filters
     - Implement `AddAction()` and `AddFilter()` with priority ordering (default 10)
     - Implement `DoAction()` to execute actions in priority order
@@ -100,7 +100,7 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Handle same-priority hooks in registration order
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8_
 
-  - [ ] 7.2 Write unit tests for hook engine
+  - [x] 7.2 Write unit tests for hook engine
     - Test priority ordering (lower priority executes first)
     - Test registration order for same-priority hooks
     - Test action execution and error collection
