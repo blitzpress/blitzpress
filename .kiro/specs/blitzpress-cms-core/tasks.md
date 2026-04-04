@@ -57,8 +57,8 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
   - Provide sensible defaults for local development
   - _Requirements: 8.1_
 
-- [ ] 5. Implement plugin discovery system (`core/internal/plugins/discover.go`)
-  - [ ] 5.1 Create plugin manifest file types and discovery logic
+- [x] 5. Implement plugin discovery system (`core/internal/plugins/discover.go`)
+  - [x] 5.1 Create plugin manifest file types and discovery logic
     - Create `PluginManifestFile` struct matching `plugin.json` schema
     - Implement `Discover()` function to walk `build/plugins/` directory
     - Validate manifest fields: schema_version, id (kebab-case), name, version (semver), sdk_version
@@ -67,7 +67,7 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Return `DiscoveredPlugin` structs with manifest, directory path, and `.so` path
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 6.1_
 
-  - [ ] 5.2 Write unit tests for plugin discovery
+  - [x] 5.2 Write unit tests for plugin discovery
     - Test manifest validation rules
     - Test kebab-case ID validation
     - Test semver version validation
