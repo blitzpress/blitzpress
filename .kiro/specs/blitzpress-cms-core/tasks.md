@@ -51,7 +51,7 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Test Carbon datetime field persistence
     - _Requirements: 9.1, 9.2, 17.3_
 
-- [ ] 4. Implement core configuration system (`core/internal/config/`)
+- [x] 4. Implement core configuration system (`core/internal/config/`)
   - Create `config.go` with `AppConfig` struct and `Load()` function
   - Read environment variables with `BLITZPRESS_` prefix
   - Provide sensible defaults for local development
