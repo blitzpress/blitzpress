@@ -11,11 +11,15 @@ import (
 	"sort"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/spf13/cobra"
 )
 
 const usageText = `Usage:
   blitzpress-manager list
   blitzpress-manager build <plugin-directory>`
+
+var errUsageDisplayed = errors.New("usage displayed")
 
 type commandRunner func(dir, name string, args ...string) error
 
@@ -43,46 +47,80 @@ func main() {
 }
 
 func run(args []string, cwd string, stdout, stderr io.Writer, runner commandRunner) int {
-	if len(args) == 0 {
-		fmt.Fprintln(stderr, usageText)
-		return 1
+	rootCmd := newRootCommand(cwd, stdout, stderr, runner)
+	rootCmd.SetArgs(args)
+
+	if err := rootCmd.Execute(); err != nil {
+		if errors.Is(err, errUsageDisplayed) {
+			return 1
+		}
+
+		return printError(stderr, err)
 	}
 
-	switch args[0] {
-	case "list":
-		repoRoot, err := findRepoRoot(cwd)
-		if err != nil {
-			return printError(stderr, err)
-		}
-
-		if len(args) != 1 {
-			return printError(stderr, errors.New("usage: blitzpress-manager list"))
-		}
-
-		if err := runList(repoRoot, stdout); err != nil {
-			return printError(stderr, err)
-		}
-
-		return 0
-	case "build":
-		repoRoot, err := findRepoRoot(cwd)
-		if err != nil {
-			return printError(stderr, err)
-		}
-
-		if err := runBuild(cwd, repoRoot, args[1:], runner); err != nil {
-			return printError(stderr, err)
-		}
-
-		return 0
-	default:
-		return printError(stderr, fmt.Errorf("unknown command %q\n\n%s", args[0], usageText))
-	}
+	return 0
 }
 
 func printError(w io.Writer, err error) int {
 	fmt.Fprintf(w, "error: %v\n", err)
 	return 1
+}
+
+func newRootCommand(cwd string, stdout, stderr io.Writer, runner commandRunner) *cobra.Command {
+	rootCmd := &cobra.Command{
+		Use:           "blitzpress-manager",
+		Short:         "Manage BlitzPress plugins",
+		SilenceErrors: true,
+		SilenceUsage:  true,
+		CompletionOptions: cobra.CompletionOptions{
+			DisableDefaultCmd: true,
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Fprintln(stderr, usageText)
+			return errUsageDisplayed
+		},
+	}
+
+	rootCmd.SetOut(stdout)
+	rootCmd.SetErr(stderr)
+	rootCmd.AddCommand(
+		newListCommand(cwd, stdout),
+		newBuildCommand(cwd, runner),
+	)
+
+	return rootCmd
+}
+
+func newListCommand(cwd string, stdout io.Writer) *cobra.Command {
+	return &cobra.Command{
+		Use:   "list",
+		Short: "List built plugins",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			repoRoot, err := findRepoRoot(cwd)
+			if err != nil {
+				return err
+			}
+
+			return runList(repoRoot, stdout)
+		},
+	}
+}
+
+func newBuildCommand(cwd string, runner commandRunner) *cobra.Command {
+	return &cobra.Command{
+		Use:   "build <plugin-directory>",
+		Short: "Build a plugin into build/plugins",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			repoRoot, err := findRepoRoot(cwd)
+			if err != nil {
+				return err
+			}
+
+			return runBuild(cwd, repoRoot, args, runner)
+		},
+	}
 }
 
 func newExecCommandRunner(stdout, stderr io.Writer) commandRunner {

@@ -31,6 +31,50 @@ func TestRunListOutputsPluginTable(t *testing.T) {
 	assertLineMatches(t, lines[2], `^beta-plugin\s+BetaPlugin\s+2\.0\.0\s+missing-plugin\.so$`)
 }
 
+func TestRunExecutesListCommandViaCLI(t *testing.T) {
+	repoRoot := createTestRepo(t)
+	buildRoot := filepath.Join(repoRoot, "build", "plugins")
+	createBuiltPlugin(t, buildRoot, "alpha-plugin", `{"id":"alpha-plugin","name":"AlphaPlugin","version":"1.0.0"}`, true)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	exitCode := run([]string{"list"}, repoRoot, &stdout, &stderr, func(dir, name string, args ...string) error {
+		t.Fatal("command runner should not be called for list")
+		return nil
+	})
+	if exitCode != 0 {
+		t.Fatalf("expected exit code 0, got %d with stderr %q", exitCode, stderr.String())
+	}
+
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	assertLineMatches(t, stdout.String(), `(?m)^alpha-plugin\s+AlphaPlugin\s+1\.0\.0\s+ready$`)
+}
+
+func TestRunWithoutArgsPrintsUsage(t *testing.T) {
+	repoRoot := createTestRepo(t)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	exitCode := run(nil, repoRoot, &stdout, &stderr, func(dir, name string, args ...string) error {
+		t.Fatal("command runner should not be called without args")
+		return nil
+	})
+	if exitCode != 1 {
+		t.Fatalf("expected exit code 1, got %d", exitCode)
+	}
+
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout output, got %q", stdout.String())
+	}
+
+	if !strings.Contains(stderr.String(), usageText) {
+		t.Fatalf("expected usage text on stderr, got %q", stderr.String())
+	}
+}
+
 func TestRunBuildReturnsValidationErrorForMissingDirectory(t *testing.T) {
 	repoRoot := createTestRepo(t)
 	called := false
