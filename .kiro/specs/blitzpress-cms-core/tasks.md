@@ -37,15 +37,15 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Test Carbon datetime serialization/deserialization
     - _Requirements: 2.1, 2.2, 17.1, 17.2_
 
-- [ ] 3. Implement core database layer (`core/internal/database/`)
-  - [ ] 3.1 Create database initialization and models
+- [x] 3. Implement core database layer (`core/internal/database/`)
+  - [x] 3.1 Create database initialization and models
     - Create `database.go` with `Initialize()` function supporting SQLite and PostgreSQL
     - Create `models.go` with `User`, `Setting`, `PluginState`, and `PluginSetting` models
     - All models must embed `pluginsdk.BaseModel` instead of `gorm.Model`
     - Add composite unique index on `PluginSetting` for `(plugin_id, key)`
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.4a, 9.5, 17.3, 17.4_
 
-  - [ ] 3.2 Write unit tests for database models
+  - [x] 3.2 Write unit tests for database models
     - Test model creation with UUID v7 primary keys
     - Test unique constraints and indexes
     - Test Carbon datetime field persistence
