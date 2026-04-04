@@ -141,15 +141,15 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Test namespace enforcement
     - _Requirements: 7.1, 7.2, 7.4, 7.5_
 
-- [ ] 10. Implement settings service (`core/internal/plugins/settings.go`)
-  - [ ] 10.1 Create settings registry and config reader
+- [x] 10. Implement settings service (`core/internal/plugins/settings.go`)
+  - [x] 10.1 Create settings registry and config reader
     - Implement `pluginSettingsRegistry` to store plugin settings schemas
     - Implement `pluginConfigReader` to read settings from database
     - Implement `Get()`, `GetInt()`, `GetFloat()`, `GetBool()`, and `GetAll()` methods
     - Settings stored in `plugin_settings` table with JSON-encoded values
     - _Requirements: 12.1, 12.2, 12.3, 12.6, 12.7_
 
-  - [ ] 10.2 Write unit tests for settings service
+  - [x] 10.2 Write unit tests for settings service
     - Test schema registration
     - Test settings persistence and retrieval
     - Test type conversion methods
