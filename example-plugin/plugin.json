@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "id": "example-plugin",
+  "name": "Example Plugin",
+  "version": "0.1.0",
+  "description": "Reference backend plugin for BlitzPress.",
+  "author": "BlitzPress",
+  "sdk_version": "0.1.0",
+  "has_frontend": true,
+  "frontend_entry": "frontend/assets/index.js",
+  "frontend_style": "frontend/assets/index.css",
+  "capabilities": [
+    "api.routes",
+    "static.assets",
+    "hooks",
+    "settings",
+    "frontend.pages"
+  ]
+}

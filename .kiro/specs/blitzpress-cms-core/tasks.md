@@ -266,14 +266,14 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Test output format settings
     - _Requirements: 11.2, 11.3_
 
-- [ ] 17. Implement example plugin backend (`example-plugin/`)
-  - [ ] 17.1 Create example plugin structure
+- [x] 17. Implement example plugin backend (`example-plugin/`)
+  - [x] 17.1 Create example plugin structure
     - Create `example-plugin/go.mod` with dependency on `plugin-sdk`
     - Create `example-plugin/plugin.json` with all required fields
     - Create `example-plugin/static/` directory with embedded assets
     - _Requirements: 15.1, 15.6, 5.2_
 
-  - [ ] 17.2 Implement example plugin Go code
+  - [x] 17.2 Implement example plugin Go code
     - Create `example-plugin/main.go` with `Plugin` implementation
     - Implement `Manifest()` returning ID, Name, Version matching `plugin.json`
     - Implement `Register()` demonstrating API routes, static files, hooks, filters, and settings
