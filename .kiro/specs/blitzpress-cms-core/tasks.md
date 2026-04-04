@@ -13,8 +13,8 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
   - Create `.gitignore` to exclude `build/` directory
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 2. Implement Plugin SDK module (`plugin-sdk/`)
-  - [ ] 2.1 Create core SDK interfaces and types
+- [x] 2. Implement Plugin SDK module (`plugin-sdk/`)
+  - [x] 2.1 Create core SDK interfaces and types
     - Create `plugin-sdk/plugin.go` with `Plugin` interface, `Manifest` struct, and `Registrar` struct
     - Create `plugin-sdk/hooks.go` with `HookRegistry` interface, `HookContext`, `ActionFunc`, `FilterFunc`, and `HookOptions`
     - Create `plugin-sdk/events.go` with `EventBus` interface, `Event` struct, and `EventHandler` type
@@ -24,14 +24,14 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Create `plugin-sdk/errors.go` with standard plugin error types
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 3.1-3.8, 4.1-4.4, 7.1, 12.1-12.4_
 
-  - [ ] 2.2 Implement BaseModel with UUID v7 and Carbon datetime
+  - [x] 2.2 Implement BaseModel with UUID v7 and Carbon datetime
     - Create `plugin-sdk/model.go` with `BaseModel` struct using `uuid.UUID` primary key
     - Implement `BeforeCreate` GORM hook to auto-generate UUID v7
     - Use `carbon.DateTime` from `github.com/dromara/carbon/v2` for all datetime fields
     - Add dependencies: `github.com/google/uuid` (v1.6+) and `github.com/dromara/carbon/v2`
     - _Requirements: 17.1, 17.2, 17.5, 17.6, 17.7_
 
-  - [ ] 2.3 Write unit tests for SDK types
+  - [x] 2.3 Write unit tests for SDK types
     - Test `Manifest` validation
     - Test `BaseModel` UUID v7 generation
     - Test Carbon datetime serialization/deserialization
