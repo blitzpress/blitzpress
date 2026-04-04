@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Editorial Executive - Digital Atelier CMS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary": "#003ec7",
+                    "on-secondary-fixed": "#141b2c",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#001452",
+                    "outline": "#737688",
+                    "on-tertiary-container": "#88fbc6",
+                    "on-primary-fixed-variant": "#0038b6",
+                    "inverse-on-surface": "#edf0ff",
+                    "primary-fixed": "#dde1ff",
+                    "on-surface": "#141b2b",
+                    "secondary-container": "#dbe2f9",
+                    "surface-variant": "#dce2f7",
+                    "on-error": "#ffffff",
+                    "on-tertiary-fixed-variant": "#005137",
+                    "tertiary-container": "#007551",
+                    "on-primary": "#ffffff",
+                    "primary-container": "#0052ff",
+                    "error-container": "#ffdad6",
+                    "surface-container": "#e9edff",
+                    "secondary-fixed-dim": "#bfc6dc",
+                    "primary-fixed-dim": "#b7c4ff",
+                    "on-secondary": "#ffffff",
+                    "outline-variant": "#c3c5d9",
+                    "surface-container-low": "#f1f3ff",
+                    "surface-container-high": "#e1e8fd",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#293040",
+                    "on-primary-container": "#dfe3ff",
+                    "tertiary": "#005a3d",
+                    "surface-container-highest": "#dce2f7",
+                    "on-tertiary-fixed": "#002114",
+                    "on-surface-variant": "#434656",
+                    "on-secondary-container": "#5c6477",
+                    "on-secondary-fixed-variant": "#3f4759",
+                    "secondary": "#565e71",
+                    "on-background": "#141b2b",
+                    "surface-container-lowest": "#ffffff",
+                    "inverse-primary": "#b7c4ff",
+                    "surface-tint": "#004ced",
+                    "secondary-fixed": "#dbe2f9",
+                    "tertiary-fixed-dim": "#68dba9",
+                    "surface-dim": "#d3daef",
+                    "tertiary-fixed": "#85f8c4",
+                    "surface": "#f9f9ff",
+                    "error": "#ba1a1a",
+                    "surface-bright": "#f9f9ff",
+                    "background": "#f9f9ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Inter"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass-header {
+            background: rgba(249, 249, 255, 0.7);
+            backdrop-filter: blur(24px);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-64 z-40 bg-[#f1f3ff] dark:bg-[#1a2133] flex flex-col py-8 px-4 gap-y-2 font-['Inter'] text-[0.875rem] tracking-normal">
+<div class="px-4 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 bg-primary-container rounded-xl flex items-center justify-center text-white">
+<span class="material-symbols-outlined" data-icon="palette">palette</span>
+</div>
+<div>
+<h2 class="text-xl font-bold text-[#141b2b] dark:text-white leading-tight">The Atelier</h2>
+<p class="text-xs text-secondary">CMS Curator</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<!-- Dashboard (Active) -->
+<a class="relative flex items-center px-4 py-3 text-[#0052FF] font-semibold before:content-[''] before:absolute before:left-0 before:w-1 before:h-6 before:bg-[#0052FF] before:rounded-r-full transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- Posts with Submenu -->
+<div class="group">
+<a class="flex items-center px-4 py-3 text-[#565e71] dark:text-[#9ea4b3] hover:text-[#0052FF] hover:bg-white/50 dark:hover:bg-white/5 transition-all duration-200 ease-in-out rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="article">article</span>
+<span class="flex-1">Posts</span>
+<span class="material-symbols-outlined text-sm" data-icon="expand_more">expand_more</span>
+</a>
+<div class="ml-11 mt-1 space-y-1 overflow-hidden transition-all duration-300">
+<a class="block py-2 text-sm text-secondary hover:text-primary" href="#">All Posts</a>
+<a class="block py-2 text-sm text-secondary hover:text-primary font-medium" href="#">New Entry</a>
+<a class="block py-2 text-sm text-secondary hover:text-primary" href="#">Categories</a>
+</div>
+</div>
+<a class="flex items-center px-4 py-3 text-[#565e71] dark:text-[#9ea4b3] hover:text-[#0052FF] hover:bg-white/50 dark:hover:bg-white/5 transition-all duration-200 ease-in-out rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="image">image</span>
+<span>Media</span>
+</a>
+<!-- Pages with Submenu -->
+<div class="group">
+<a class="flex items-center px-4 py-3 text-[#565e71] dark:text-[#9ea4b3] hover:text-[#0052FF] hover:bg-white/50 dark:hover:bg-white/5 transition-all duration-200 ease-in-out rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="description">description</span>
+<span class="flex-1">Pages</span>
+<span class="material-symbols-outlined text-sm" data-icon="expand_more">expand_more</span>
+</a>
+<div class="hidden group-hover:block ml-11 mt-1 space-y-1">
+<a class="block py-2 text-sm text-secondary hover:text-primary" href="#">All Pages</a>
+<a class="block py-2 text-sm text-secondary hover:text-primary" href="#">Add New</a>
+</div>
+</div>
+<a class="flex items-center px-4 py-3 text-[#565e71] dark:text-[#9ea4b3] hover:text-[#0052FF] hover:bg-white/50 dark:hover:bg-white/5 transition-all duration-200 ease-in-out rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="extension">extension</span>
+<span>Plugins</span>
+</a>
+<a class="flex items-center px-4 py-3 text-[#565e71] dark:text-[#9ea4b3] hover:text-[#0052FF] hover:bg-white/50 dark:hover:bg-white/5 transition-all duration-200 ease-in-out rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="palette">palette</span>
+<span>Appearance</span>
+</a>
+</nav>
+<div class="pt-4 border-t border-transparent space-y-1">
+<button class="w-full mb-4 bg-gradient-to-br from-primary to-primary-container text-white py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                New Entry
+            </button>
+<a class="flex items-center px-4 py-3 text-[#565e71] dark:text-[#9ea4b3] hover:text-[#0052FF] hover:bg-white/50 transition-all duration-200 ease-in-out rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+<a class="flex items-center px-4 py-3 text-[#565e71] dark:text-[#9ea4b3] hover:text-[#0052FF] hover:bg-white/50 transition-all duration-200 ease-in-out rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="help_outline">help_outline</span>
+<span>Support</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 left-64 z-50 glass-header flex justify-between items-center px-8 py-4 border-b border-transparent shadow-[0_12px_40px_rgba(20,27,43,0.06)]">
+<div class="flex items-center flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Search entries, media, or settings..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-secondary hover:bg-[#f1f3ff] rounded-full transition-colors active:scale-95">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-secondary hover:bg-[#f1f3ff] rounded-full transition-colors active:scale-95">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<button class="ml-2 px-6 py-2 bg-primary-container text-white rounded-full text-sm font-semibold hover:opacity-90 active:scale-95 transition-all">
+                    Publish
+                </button>
+<div class="ml-4 flex items-center gap-3">
+<div class="text-right">
+<p class="text-sm font-semibold text-on-surface leading-none">Julian Vane</p>
+<p class="text-[10px] text-secondary uppercase tracking-widest font-bold">Editor-in-Chief</p>
+</div>
+<img alt="User avatar" class="w-10 h-10 rounded-full border-2 border-white shadow-sm" data-alt="professional portrait of a creative professional man with short dark hair and a confident expression in a studio setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQT-wwyUipsBjbHVUZJATEqSqh3mCqlO2RPnd6hjfLi3_-dyT9Htqq7WBf5-XdQaWMPSiUH_Z2Y6CxyYzqj0ahPgBCH2mHB6rt5sOVRImQuKaU3jvTFxdKwj1M-n1sEJ_sQ83kjh58oVtTdM_fHigk7Hj-fhsmvoNVyGTnH9CkuEqvts1y3gM-7zgJXRzMNzaTae-f_PqrQ4TZ85ULNcTBQ5U8dTyfPZG8ZkYhQRK1VfGY7aj9fE1XJyUhUlA5capS3cJtiO3Kh7W9"/>
+</div>
+</div>
+</header>
+<!-- Dashboard Canvas -->
+<div class="pt-24 px-8 pb-12">
+<!-- Welcome Header -->
+<div class="mb-10">
+<h1 class="text-4xl font-extrabold text-on-surface tracking-tight mb-2">At a Glance</h1>
+<p class="text-secondary text-lg">The pulse of your digital publication today.</p>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Large Impression Chart Card -->
+<div class="col-span-8 bg-surface-container-lowest rounded-xl p-8 shadow-[0_12px_40px_rgba(20,27,43,0.06)] relative overflow-hidden">
+<div class="flex justify-between items-center mb-8">
+<div>
+<h3 class="text-lg font-bold">Impression Volume</h3>
+<p class="text-sm text-secondary">Traffic trends across all channels</p>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-surface-container-low rounded-full text-xs font-medium text-primary">Last 7 Days</span>
+<span class="px-3 py-1 text-xs font-medium text-secondary">Monthly</span>
+</div>
+</div>
+<div class="h-64 flex items-end justify-between gap-2">
+<!-- Simulated Chart Bars -->
+<div class="w-full bg-surface-container-low rounded-t-lg h-[40%] transition-all hover:bg-primary-container/20 cursor-pointer"></div>
+<div class="w-full bg-surface-container-low rounded-t-lg h-[60%] transition-all hover:bg-primary-container/20 cursor-pointer"></div>
+<div class="w-full bg-surface-container-low rounded-t-lg h-[45%] transition-all hover:bg-primary-container/20 cursor-pointer"></div>
+<div class="w-full bg-primary-container rounded-t-lg h-[85%] relative">
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] py-1 px-2 rounded">12.4k</div>
+</div>
+<div class="w-full bg-surface-container-low rounded-t-lg h-[55%] transition-all hover:bg-primary-container/20 cursor-pointer"></div>
+<div class="w-full bg-surface-container-low rounded-t-lg h-[70%] transition-all hover:bg-primary-container/20 cursor-pointer"></div>
+<div class="w-full bg-surface-container-low rounded-t-lg h-[50%] transition-all hover:bg-primary-container/20 cursor-pointer"></div>
+</div>
+<div class="flex justify-between mt-4 text-[10px] text-secondary font-bold uppercase tracking-widest">
+<span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+</div>
+</div>
+<!-- Secondary Metric Stack -->
+<div class="col-span-4 flex flex-col gap-6">
+<div class="flex-1 bg-primary text-white rounded-xl p-6 relative overflow-hidden">
+<div class="relative z-10">
+<p class="text-primary-fixed text-xs font-bold uppercase tracking-widest mb-1">Total Subscribers</p>
+<h4 class="text-3xl font-bold">24,812</h4>
+<div class="mt-4 flex items-center gap-2 text-tertiary-fixed text-sm">
+<span class="material-symbols-outlined text-sm" data-icon="trending_up">trending_up</span>
+<span>+12% from last week</span>
+</div>
+</div>
+<span class="material-symbols-outlined absolute -right-4 -bottom-4 text-9xl opacity-10" data-icon="groups">groups</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest rounded-xl p-6 shadow-[0_12px_40px_rgba(20,27,43,0.06)] border border-transparent">
+<p class="text-secondary text-xs font-bold uppercase tracking-widest mb-1">Average Read Time</p>
+<h4 class="text-3xl font-bold text-on-surface">04:12</h4>
+<div class="mt-4 flex items-center gap-2 text-tertiary text-sm">
+<span class="material-symbols-outlined text-sm" data-icon="query_builder">query_builder</span>
+<span>Optimal engagement</span>
+</div>
+</div>
+</div>
+<!-- Recent Activity (Asymmetric Wide Card) -->
+<div class="col-span-7 bg-surface-container-lowest rounded-xl p-8 shadow-[0_12px_40px_rgba(20,27,43,0.06)]">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-lg font-bold">Recent Activity</h3>
+<button class="text-primary text-sm font-semibold hover:underline">View All</button>
+</div>
+<div class="space-y-6">
+<!-- Activity Item 1 -->
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary" data-icon="edit_note">edit_note</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold text-on-surface">New Draft: "The Future of Minimalist Design"</p>
+<p class="text-xs text-secondary">by Sarah Jenkins • 2 hours ago</p>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-1.5 h-1.5 rounded-full bg-primary-container"></div>
+<span class="text-[10px] font-bold text-secondary uppercase">Draft</span>
+</div>
+</div>
+<!-- Activity Item 2 -->
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-tertiary" data-icon="check_circle">check_circle</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold text-on-surface">Article Published: "Urban Gardening 101"</p>
+<p class="text-xs text-secondary">by Marcus Thorne • 5 hours ago</p>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary"></div>
+<span class="text-[10px] font-bold text-secondary uppercase">Live</span>
+</div>
+</div>
+<!-- Activity Item 3 -->
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-error" data-icon="report">report</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold text-on-surface">System Update: Plugin conflict detected</p>
+<p class="text-xs text-secondary">WooCommerce Core • 1 day ago</p>
+</div>
+<button class="px-3 py-1 bg-surface-container-high rounded text-[10px] font-bold text-on-surface-variant uppercase">Fix Now</button>
+</div>
+</div>
+</div>
+<!-- Featured Image / Quick Entry Card -->
+<div class="col-span-5 bg-surface-container rounded-xl overflow-hidden shadow-xl flex flex-col">
+<div class="h-40 bg-cover bg-center relative" data-alt="aesthetic minimalist home office desk with a laptop, designer journals, and a small plant in soft afternoon light" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCoPNIPFIier22DHgXKqkxOx9Bsix3QR_993a1YhTIR5oeQFk2lnJstg62C03CKbYK_NmURZvA3CijpKlP5JJ_g-fnY1LueoQUhW6jzeiUFQkmlU_tAXb7g2z4kR72hkSqty2soRoeQz1z7syNVxVLCJZ8Oia-163AcEBWN8PaEIoRfyBK_MNfNnAb9wpvUKMPzhenuUWOIqSspieo2_ozF5Dd-GuY0IUdhmvyJFHp2dcGsYdsZNrCZNFcneYtq9GpbGQ6CQAcCQ3Xl')">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
+<span class="text-white text-xs font-bold uppercase tracking-widest">Featured Insight</span>
+</div>
+</div>
+<div class="p-6 flex-1 flex flex-col justify-between">
+<div>
+<h4 class="text-xl font-bold leading-tight mb-2">Is generative AI the new editorial assistant?</h4>
+<p class="text-sm text-secondary mb-4">Deep dive into how newsrooms are leveraging LLMs without losing the human touch.</p>
+</div>
+<div class="flex items-center justify-between mt-4">
+<div class="flex -space-x-2">
+<img alt="Author" class="w-8 h-8 rounded-full border-2 border-surface-container" data-alt="portrait of a professional woman with glasses and a friendly smile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAy0amLOhf7SxAgttOKBf1t2zmzAe9Fz69GSieIvJWm5GOwboXsYlQJWXhpHeHgQU_Qb3CUONGDHbobzdlVLCOTAh0TKng9S9Ee7chlccRFaUpf_kEBHLIR3HwmLk5P8t8IBkhpWzw0twtWpVzePJ_93y9G9M_CkY83pyuVqBoyOHEDQlmA9v_jd3bqpBrBkoqGEaOYFDAyqSlXTktS06kxOHaGcBwkqxF4WdTFxgT2J4Wz8YP4YfW28IM_moFUiQ97i-3J73_Z-6oc"/>
+<img alt="Author" class="w-8 h-8 rounded-full border-2 border-surface-container" data-alt="portrait of a creative man with a beard and artistic style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjlnQkw-K8KQZZAj_0TamQGUCmGgtQDZUd3uReqf-gmsZE5bRuc7VC361sWblIHpknDOTMo8_rfI9UpN9-cVXBbqdHyTB9J7cjLz7aLEZTe0WchIf6oFt7D6XncaZxkLcZ0ek3heQgdQXimegvWiOJ_z50hHEkIu1q_odixGR9rqYOc-wFfuycG8IWsSOy7K96sUNtTIQ5th-y0HJ3rm_FHN3mt-0LvDd3cwos0V_HDAhVqlmjr1iDdM_9Gcr81xUz82-YN5ofuN3_"/>
+</div>
+<button class="flex items-center gap-2 text-primary font-bold text-sm">
+                                Read More
+                                <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>
