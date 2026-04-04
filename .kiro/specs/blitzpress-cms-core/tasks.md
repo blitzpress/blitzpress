@@ -172,7 +172,7 @@ This plan implements a Go monorepo CMS with a plugin system inspired by WordPres
     - Test error handling for failed plugins
     - _Requirements: 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 12. Checkpoint - Ensure all backend core systems compile
+- [x] 12. Checkpoint - Ensure all backend core systems compile
   - Run `go build` in `plugin-sdk/`, `core/`, and verify no errors
   - Ensure all tests pass, ask the user if questions arise
 
