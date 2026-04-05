@@ -1,0 +1,676 @@
+{
+  "name": "BlitzPress Admin",
+  "version": "1.0.0",
+  "description": "Design specification for the BlitzPress CMS admin panel",
+  "stack": {
+    "framework": "SolidJS 1.9",
+    "router": "@solidjs/router 0.15",
+    "css": "Tailwind CSS v4",
+    "build": "Vite 7",
+    "icons": "Custom SVG (Feather-style, stroke-based, 24x24 viewBox)"
+  },
+
+  "typography": {
+    "fontFamily": "'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif",
+    "fontSource": "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap",
+    "rendering": {
+      "webkitFontSmoothing": "antialiased",
+      "mozOsxFontSmoothing": "grayscale"
+    },
+    "scale": {
+      "xs": "0.6875rem",
+      "sm": "0.875rem",
+      "base": "1rem",
+      "lg": "1.125rem",
+      "xl": "1.25rem",
+      "2xl": "1.5rem",
+      "3xl": "1.875rem",
+      "8xl": "6rem"
+    },
+    "weights": {
+      "normal": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700,
+      "extrabold": 800,
+      "black": 900
+    },
+    "usage": {
+      "pageTitle": { "size": "lg", "weight": "semibold", "color": "slate-800" },
+      "sectionHeading": { "size": "sm|base", "weight": "semibold", "color": "slate-800|slate-900" },
+      "cardHeading": { "size": "sm", "weight": "semibold", "color": "slate-900" },
+      "bodyText": { "size": "sm", "weight": "normal", "color": "slate-600|slate-700" },
+      "labelText": { "size": "sm", "weight": "medium", "color": "slate-700" },
+      "helperText": { "size": "xs", "weight": "normal", "color": "slate-400" },
+      "metaText": { "size": "xs|[11px]", "weight": "normal", "color": "slate-400|slate-500" },
+      "tableHeader": { "size": "xs", "weight": "semibold", "color": "slate-500", "transform": "uppercase", "tracking": "wider" },
+      "sidebarGroupLabel": { "size": "[10px]", "weight": "bold", "color": "slate-500/80", "transform": "uppercase", "tracking": "[0.15em]" },
+      "sidebarNavItem": { "size": "[13px]", "weight": "normal|medium", "color": "slate-400|white" },
+      "brandName": { "size": "lg", "weight": "bold", "color": "white", "accent": "indigo-400" }
+    }
+  },
+
+  "colors": {
+    "brand": {
+      "primary": "#4f46e5",
+      "primaryHover": "#4338ca",
+      "primaryName": "indigo-600",
+      "primaryHoverName": "indigo-700",
+      "accent": "indigo-400",
+      "accentLight": "indigo-50"
+    },
+    "semantic": {
+      "success": "emerald-600",
+      "successBg": "emerald-50",
+      "successRing": "emerald-500/20",
+      "warning": "amber-600",
+      "warningBg": "amber-50",
+      "warningRing": "amber-500/20",
+      "danger": "red-500|red-600",
+      "dangerBg": "red-50",
+      "info": "blue-600",
+      "infoBg": "blue-50"
+    },
+    "surfaces": {
+      "pageBackground": "slate-50",
+      "cardBackground": "white",
+      "cardBorder": "slate-200/60",
+      "cardShadow": "shadow-sm shadow-slate-200/50",
+      "sidebarBackground": "slate-900",
+      "sidebarBorder": "white/[0.06]",
+      "topbarBackground": "white/70",
+      "topbarBorder": "slate-200/60",
+      "tableHeaderBg": "slate-50/80",
+      "divider": "slate-100",
+      "dividerLight": "slate-100/80"
+    },
+    "text": {
+      "primary": "slate-900",
+      "secondary": "slate-800",
+      "body": "slate-600|slate-700",
+      "muted": "slate-500",
+      "subtle": "slate-400",
+      "inverse": "white",
+      "inverseSubtle": "slate-400|slate-500",
+      "link": "blue-600|indigo-600",
+      "linkHover": "blue-700|indigo-700"
+    },
+    "avatarPalette": [
+      "indigo-600",
+      "violet-600",
+      "emerald-600",
+      "amber-600",
+      "pink-600"
+    ],
+    "roleBadges": {
+      "Administrator": { "bg": "blue-50", "text": "blue-700", "ring": "blue-500/20" },
+      "Editor": { "bg": "violet-50", "text": "violet-700", "ring": "violet-500/20" },
+      "Author": { "bg": "emerald-50", "text": "emerald-700", "ring": "emerald-500/20" },
+      "Contributor": { "bg": "amber-50", "text": "amber-700", "ring": "amber-500/20" },
+      "Subscriber": { "bg": "slate-100", "text": "slate-600", "ring": "slate-500/20" }
+    },
+    "mediaTypeColors": {
+      "image": { "bg": "blue-100", "text": "blue-600" },
+      "document": { "bg": "amber-100", "text": "amber-600" },
+      "video": { "bg": "violet-100", "text": "violet-600" },
+      "audio": { "bg": "emerald-100", "text": "emerald-600" }
+    },
+    "activityTypeColors": {
+      "published": { "bg": "emerald-50", "text": "emerald-600" },
+      "updated": { "bg": "blue-50", "text": "blue-600" },
+      "installed": { "bg": "violet-50", "text": "violet-600" },
+      "created": { "bg": "amber-50", "text": "amber-600" },
+      "system": { "bg": "slate-100", "text": "slate-500" }
+    }
+  },
+
+  "spacing": {
+    "system": "Tailwind 4px/8px scale",
+    "pageContentPadding": "24px (p-6)",
+    "cardPadding": "20px (p-5)",
+    "cardPaddingCompact": "16px (p-4)",
+    "cardHeaderPadding": "20px (p-5)",
+    "sectionGap": "24px (space-y-6)",
+    "cardGap": "16px (gap-4)",
+    "gridGapLarge": "24px (gap-6)",
+    "inlineGap": "8px (gap-2)",
+    "iconTextGap": "8px (gap-2) | 12px (gap-3)"
+  },
+
+  "borderRadius": {
+    "none": "0",
+    "sm": "rounded (4px)",
+    "base": "rounded-lg (8px)",
+    "xl": "rounded-xl (12px)",
+    "2xl": "rounded-2xl (16px)",
+    "full": "rounded-full (9999px)",
+    "usage": {
+      "cards": "rounded-2xl",
+      "buttons": "rounded-xl",
+      "inputs": "rounded-xl",
+      "badges": "rounded-full",
+      "avatarUser": "rounded-full",
+      "avatarAdmin": "rounded-lg",
+      "logoIcon": "rounded-xl",
+      "sidebarNavItem": "rounded-xl",
+      "topbarIconButton": "rounded-xl",
+      "mediaGridItem": "rounded-2xl",
+      "dropZone": "rounded-2xl",
+      "pluginCard": "rounded-2xl",
+      "toggleSwitch": "rounded-full",
+      "sectionAccentBar": "rounded-full"
+    }
+  },
+
+  "layout": {
+    "shell": {
+      "type": "sidebar + topbar + main",
+      "sidebarWidth": "256px (w-64)",
+      "sidebarCollapsedWidth": "64px (w-16)",
+      "topbarHeight": "64px (h-16)",
+      "mainMarginLeft": "sidebar width (dynamic)",
+      "topbarPosition": "sticky top-0 z-20",
+      "sidebarPosition": "fixed left-0 top-0 h-full z-30"
+    },
+    "sidebar": {
+      "background": "bg-slate-900",
+      "borderRight": "none (uses subtle border-white/[0.06])",
+      "sections": ["logo", "navigation", "userProfile"],
+      "navGroupSpacing": "mb-6",
+      "navItemPadding": "px-3 py-2.5",
+      "activeIndicator": {
+        "type": "left bar",
+        "width": "3px",
+        "height": "20px (h-5)",
+        "color": "indigo-400",
+        "borderRadius": "rounded-r-full"
+      },
+      "activeItemBg": "white/[0.08]",
+      "hoverItemBg": "white/[0.04]",
+      "collapseTransition": "transition-all duration-300"
+    },
+    "topbar": {
+      "background": "bg-white/70 backdrop-blur-xl",
+      "border": "border-b border-slate-200/60",
+      "leftContent": ["menuToggle", "pageTitle"],
+      "rightContent": ["searchInput", "notificationBell", "viewSiteButton", "userAvatar"]
+    },
+    "grids": {
+      "statsCards": "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4",
+      "dashboardMainSplit": "grid-cols-1 lg:grid-cols-3 gap-6",
+      "dashboardBottomSplit": "grid-cols-1 lg:grid-cols-2 gap-6",
+      "editorLayout": "grid-cols-1 lg:grid-cols-3 gap-6",
+      "mediaGrid": "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
+    }
+  },
+
+  "components": {
+    "button": {
+      "primary": {
+        "bg": "bg-indigo-600",
+        "bgHover": "hover:bg-indigo-700",
+        "text": "text-white",
+        "padding": "px-4 py-2|py-2.5",
+        "font": "text-sm font-medium",
+        "radius": "rounded-xl",
+        "activeEffect": "active:scale-[0.98]",
+        "transition": "transition-colors"
+      },
+      "secondary": {
+        "bg": "transparent",
+        "border": "border border-slate-200",
+        "borderHover": "hover:border-indigo-200",
+        "text": "text-slate-700",
+        "padding": "px-4 py-2",
+        "font": "text-sm font-medium",
+        "radius": "rounded-xl",
+        "hover": "hover:bg-slate-50",
+        "transition": "transition-colors"
+      },
+      "publish": {
+        "bg": "bg-emerald-600",
+        "bgHover": "hover:bg-emerald-700",
+        "text": "text-white",
+        "padding": "px-4 py-2",
+        "font": "text-sm font-medium",
+        "radius": "rounded-xl",
+        "transition": "transition-colors"
+      },
+      "ghost": {
+        "bg": "transparent",
+        "text": "text-slate-400|text-slate-500",
+        "textHover": "hover:text-slate-700",
+        "bgHover": "hover:bg-slate-100",
+        "padding": "p-2|p-2.5",
+        "radius": "rounded-xl",
+        "transition": "transition-all duration-200"
+      },
+      "bannerCta": {
+        "bg": "bg-white/15",
+        "bgHover": "hover:bg-white/25",
+        "text": "text-white",
+        "font": "text-sm font-semibold",
+        "padding": "px-5 py-2.5",
+        "radius": "rounded-xl",
+        "extras": "backdrop-blur-sm border border-white/20 shadow-lg shadow-black/10"
+      }
+    },
+
+    "input": {
+      "default": {
+        "bg": "bg-slate-50/50",
+        "border": "border border-slate-200",
+        "text": "text-sm text-slate-700",
+        "placeholder": "placeholder-slate-300|placeholder-slate-400",
+        "radius": "rounded-xl",
+        "padding": "px-3 py-2|px-3.5 py-2.5",
+        "focus": "focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-200",
+        "transition": "transition-all"
+      },
+      "search": {
+        "bg": "bg-slate-100/80",
+        "border": "border border-transparent",
+        "focusBg": "focus:bg-white",
+        "padding": "pl-10 pr-4 py-2.5",
+        "expandOnFocus": { "default": "w-64", "focused": "w-80" }
+      },
+      "textarea": {
+        "extends": "input.default",
+        "resize": "resize-none"
+      },
+      "select": {
+        "extends": "input.default",
+        "cursor": "cursor-pointer"
+      }
+    },
+
+    "card": {
+      "default": {
+        "bg": "bg-white",
+        "border": "border border-slate-200/60",
+        "shadow": "shadow-sm shadow-slate-200/50",
+        "radius": "rounded-2xl",
+        "headerBorder": "border-b border-slate-100",
+        "headerPadding": "p-5",
+        "bodyPadding": "p-5"
+      },
+      "compactHeader": {
+        "extends": "card.default",
+        "headerPadding": "p-4",
+        "bodyPadding": "p-4"
+      }
+    },
+
+    "badge": {
+      "status": {
+        "published": {
+          "bg": "bg-emerald-50",
+          "text": "text-emerald-600|text-emerald-700",
+          "ring": "ring-1 ring-emerald-500/20"
+        },
+        "draft": {
+          "bg": "bg-amber-50",
+          "text": "text-amber-600|text-amber-700",
+          "ring": "ring-1 ring-amber-500/20"
+        }
+      },
+      "update": {
+        "bg": "bg-amber-50",
+        "text": "text-amber-700",
+        "ring": "ring-1 ring-amber-500/20"
+      },
+      "shared": {
+        "padding": "px-2.5 py-0.5",
+        "radius": "rounded-full",
+        "font": "text-xs font-medium"
+      }
+    },
+
+    "table": {
+      "wrapper": "bg-white rounded-2xl border border-slate-200/60 shadow-sm shadow-slate-200/50 overflow-hidden",
+      "headerRow": "border-b border-slate-200 bg-slate-50/80",
+      "headerCell": "text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider",
+      "bodyDivider": "divide-y divide-slate-100",
+      "bodyRow": "hover:bg-gradient-to-r hover:from-slate-50/80 hover:to-transparent transition-colors group",
+      "bodyCell": "px-4 py-3",
+      "rowActions": "opacity-0 group-hover:opacity-100 transition-opacity",
+      "titleHover": "group-hover:text-indigo-600 transition-colors",
+      "footer": "flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-slate-50/80"
+    },
+
+    "tabs": {
+      "container": "flex items-center gap-1 border-b border-slate-200",
+      "item": "px-4 py-2.5 text-sm font-medium border-b-2 transition-colors cursor-pointer",
+      "active": "border-indigo-500 text-indigo-600",
+      "inactive": "border-transparent text-slate-500 hover:text-slate-700"
+    },
+
+    "toggle": {
+      "track": {
+        "width": "w-11",
+        "height": "h-6",
+        "radius": "rounded-full",
+        "activeColor": "bg-indigo-600",
+        "inactiveColor": "bg-slate-300",
+        "transition": "transition-colors"
+      },
+      "knob": {
+        "size": "w-[22px] h-[22px]",
+        "position": "absolute top-[1px] left-[1px]",
+        "bg": "bg-white",
+        "radius": "rounded-full",
+        "shadow": "shadow-sm",
+        "activeTranslate": "translate-x-5",
+        "transition": "transition-transform"
+      }
+    },
+
+    "pagination": {
+      "button": "px-3 py-1.5 text-sm border border-slate-200 rounded-lg text-slate-500 hover:bg-white transition-colors cursor-pointer",
+      "active": "px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg cursor-pointer"
+    },
+
+    "avatar": {
+      "sidebar": {
+        "size": "w-9 h-9",
+        "bg": "bg-indigo-600",
+        "radius": "rounded-lg",
+        "text": "text-xs font-bold text-white"
+      },
+      "topbar": {
+        "size": "w-9 h-9",
+        "bg": "bg-indigo-600",
+        "radius": "rounded-lg",
+        "text": "text-xs font-bold text-white"
+      },
+      "tableRow": {
+        "size": "w-8 h-8",
+        "bg": "cycled from avatarPalette",
+        "radius": "rounded-full",
+        "text": "text-xs font-semibold text-white"
+      }
+    },
+
+    "logo": {
+      "icon": {
+        "size": "w-9 h-9",
+        "bg": "bg-indigo-600",
+        "radius": "rounded-xl",
+        "iconName": "bolt",
+        "iconSize": 20,
+        "iconColor": "text-white"
+      },
+      "text": {
+        "primary": "text-white font-bold text-lg tracking-tight",
+        "accent": "text-indigo-400"
+      }
+    },
+
+    "notificationDot": {
+      "size": "h-2.5 w-2.5",
+      "color": "bg-red-500",
+      "radius": "rounded-full",
+      "animation": "pulse-ring (1.5s, scale 1 to 1.8, opacity 0.6 to 0)"
+    },
+
+    "dropZone": {
+      "border": "border-2 border-dashed border-slate-300|border-slate-200",
+      "radius": "rounded-2xl|rounded-xl",
+      "padding": "p-10|p-8",
+      "hoverBorder": "hover:border-indigo-400|hover:border-indigo-300",
+      "hoverBg": "hover:bg-indigo-50/30",
+      "transition": "transition-all duration-300"
+    },
+
+    "filterPills": {
+      "active": "bg-indigo-600 text-white rounded-xl",
+      "inactive": "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl",
+      "padding": "px-3.5 py-1.5 text-sm"
+    },
+
+    "sectionAccentBar": {
+      "size": "w-1.5 h-5|h-4",
+      "radius": "rounded-full",
+      "usage": "Before section headings in cards",
+      "colors": {
+        "default": "indigo-500",
+        "publish": "indigo-500",
+        "categories": "violet-500",
+        "tags": "amber-500",
+        "featuredImage": "emerald-500"
+      },
+      "dashboardAccentBars": {
+        "recentPosts": "gradient from-blue-500 to-indigo-500",
+        "quickDraft": "gradient from-violet-500 to-purple-500",
+        "recentActivity": "gradient from-amber-500 to-orange-500",
+        "siteHealth": "gradient from-emerald-500 to-teal-500"
+      }
+    },
+
+    "pluginCard": {
+      "topBar": {
+        "active": "bg-indigo-500",
+        "inactive": "bg-slate-200",
+        "height": "h-1",
+        "position": "absolute top-0 left-0 right-0"
+      },
+      "iconContainer": {
+        "size": "w-12 h-12",
+        "radius": "rounded-xl",
+        "active": "bg-indigo-50 ring-1 ring-indigo-500/10",
+        "inactive": "bg-slate-100"
+      },
+      "inactiveOverlay": "opacity-70"
+    },
+
+    "healthScoreRing": {
+      "size": "w-16 h-16",
+      "viewBox": "0 0 36 36",
+      "strokeWidth": 3,
+      "trackColor": "#f1f5f9",
+      "progressGradient": { "start": "#10b981", "end": "#14b8a6" },
+      "linecap": "round",
+      "rotation": "-90deg",
+      "labelSize": "text-sm font-bold",
+      "labelColor": "text-emerald-600"
+    },
+
+    "healthCheckItem": {
+      "iconSize": "w-5 h-5",
+      "iconRadius": "rounded-full",
+      "ok": { "bg": "bg-emerald-50", "ring": "ring-emerald-500/20", "icon": "check", "iconColor": "text-emerald-600" },
+      "warn": { "bg": "bg-amber-50", "ring": "ring-amber-500/20", "icon": "bolt", "iconColor": "text-amber-600" }
+    },
+
+    "errorPage": {
+      "errorCode": "text-8xl font-black text-indigo-600",
+      "iconContainer": "w-20 h-20 bg-indigo-50 rounded-2xl",
+      "iconColor": "text-indigo-400",
+      "heading": "text-2xl font-bold text-slate-800",
+      "paragraph": "text-slate-500 max-w-sm text-center"
+    }
+  },
+
+  "dashboardWidgets": {
+    "note": "Gradients are ONLY used on dashboard widgets. All other UI uses solid colors.",
+    "heroBanner": {
+      "gradient": "bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600",
+      "animation": "animate-gradient (background-size: 200% 200%, 4s ease infinite)",
+      "decorativeShapes": [
+        { "type": "circle", "class": "-top-16 -right-16 w-52 h-52 bg-white/10 blur-3xl" },
+        { "type": "circle", "class": "-bottom-20 -left-16 w-60 h-60 bg-white/[0.07] blur-3xl" },
+        { "type": "rect", "class": "top-4 right-32 w-24 h-24 bg-white/[0.04] rounded-2xl rotate-12" },
+        { "type": "rect", "class": "bottom-2 right-12 w-16 h-16 bg-white/[0.04] rounded-xl -rotate-6" }
+      ],
+      "shadow": "shadow-xl shadow-indigo-500/15",
+      "radius": "rounded-2xl",
+      "padding": "p-8"
+    },
+    "statCards": [
+      { "label": "Total Posts", "icon": "file-text", "gradient": "from-blue-600 to-cyan-500", "shadow": "shadow-blue-500/20" },
+      { "label": "Total Pages", "icon": "file", "gradient": "from-emerald-600 to-teal-400", "shadow": "shadow-emerald-500/20" },
+      { "label": "Active Plugins", "icon": "puzzle", "gradient": "from-violet-600 to-purple-400", "shadow": "shadow-violet-500/20" },
+      { "label": "Users", "icon": "users", "gradient": "from-amber-500 to-orange-400", "shadow": "shadow-amber-500/20" }
+    ],
+    "statCardStructure": {
+      "radius": "rounded-2xl",
+      "padding": "p-5",
+      "shadow": "shadow-lg",
+      "hoverLift": "hover:shadow-xl hover:-translate-y-1 transition-all duration-300",
+      "iconBox": "w-11 h-11 bg-white/20 backdrop-blur-sm rounded-xl shadow-inner shadow-white/10",
+      "changeBadge": "bg-white/15 rounded-full px-2.5 py-1 text-[11px] font-medium text-white/70",
+      "valueSize": "text-3xl font-extrabold tracking-tight"
+    }
+  },
+
+  "animations": {
+    "gradientShift": {
+      "usage": "Dashboard hero banner only",
+      "property": "background-position",
+      "duration": "4s",
+      "easing": "ease",
+      "keyframes": "0%,100% -> 0% 50%; 50% -> 100% 50%",
+      "backgroundSize": "200% 200%"
+    },
+    "pulseRing": {
+      "usage": "Notification dot in topbar",
+      "duration": "1.5s",
+      "easing": "cubic-bezier(0.4, 0, 0.6, 1)",
+      "keyframes": "0% -> scale(1) opacity(0.6); 100% -> scale(1.8) opacity(0)"
+    },
+    "float": {
+      "usage": "Reserved for decorative elements",
+      "duration": "6s",
+      "easing": "ease-in-out",
+      "keyframes": "0%,100% -> translateY(0); 50% -> translateY(-8px)"
+    },
+    "transitions": {
+      "buttonPress": "active:scale-[0.98]",
+      "cardHoverLift": "hover:-translate-y-0.5|hover:-translate-y-1 transition-all duration-300",
+      "sidebarCollapse": "transition-all duration-300",
+      "allInteractive": "transition-all duration-200",
+      "colorChange": "transition-colors",
+      "opacity": "transition-opacity"
+    }
+  },
+
+  "scrollbar": {
+    "width": "5px",
+    "height": "5px",
+    "trackBackground": "transparent",
+    "thumbBackground": "#cbd5e1",
+    "thumbHoverBackground": "#94a3b8",
+    "thumbRadius": "9999px"
+  },
+
+  "icons": {
+    "library": "Custom inline SVG (Feather-style)",
+    "viewBox": "0 0 24 24",
+    "strokeWidth": 2,
+    "strokeLinecap": "round",
+    "strokeLinejoin": "round",
+    "fill": "none",
+    "defaultSize": 20,
+    "available": [
+      "home", "file-text", "image", "file", "puzzle", "users", "settings",
+      "search", "bell", "plus", "chevron-right", "chevron-down", "chevron-left",
+      "edit", "trash", "eye", "menu", "x", "check", "upload", "tag", "calendar",
+      "chart", "arrow-left", "bolt", "clock", "globe", "shield", "logout",
+      "trending-up", "grid", "external-link", "folder"
+    ]
+  },
+
+  "pages": {
+    "dashboard": {
+      "route": "/",
+      "sections": ["heroBanner", "statCards", "recentPosts+quickDraft", "recentActivity+siteHealth"],
+      "widgets": ["heroBanner", "statCards(4)", "recentPostsList", "quickDraftForm", "activityTimeline", "healthScoreRing+checkList"]
+    },
+    "posts": {
+      "route": "/posts",
+      "sections": ["toolbar(addNew+search)", "filterTabs(all|published|draft|trash)", "dataTable", "pagination"],
+      "columns": ["checkbox", "title", "author", "category", "date", "status"],
+      "rowActions": ["edit", "trash", "view"]
+    },
+    "postEditor": {
+      "route": "/posts/new | /posts/:id",
+      "layout": "2-col (editor 2/3 + sidebar 1/3)",
+      "mainArea": ["titleInput", "richTextToolbar", "contentTextarea"],
+      "sidebarPanels": ["publish(status|visibility|schedule)", "categories(checkboxList)", "tags(input)", "featuredImage(dropZone)"],
+      "toolbar": ["bold", "italic", "underline", "divider", "image", "tag", "link"]
+    },
+    "mediaLibrary": {
+      "route": "/media",
+      "sections": ["toolbar(uploadButton)", "dropZone", "filterPills(all|images|documents|video|audio)", "mediaGrid"],
+      "gridItemStructure": "typeColorSquare + fileName + fileSize"
+    },
+    "pagesManager": {
+      "route": "/pages",
+      "sections": ["toolbar(addNew+search)", "dataTable"],
+      "columns": ["checkbox", "title", "author", "template", "date", "status"]
+    },
+    "plugins": {
+      "route": "/plugins",
+      "sections": ["toolbar(installButton)", "filterTabs(installed|active|inactive)", "pluginCardList"],
+      "cardStructure": "topBar + icon + name + version + updateBadge + description + authorMeta + actions + toggleSwitch"
+    },
+    "settings": {
+      "route": "/settings",
+      "tabs": ["general", "writing", "reading", "media", "permalinks"],
+      "formLayout": "max-w-2xl within card"
+    },
+    "users": {
+      "route": "/users",
+      "sections": ["toolbar(addUser)", "dataTable"],
+      "columns": ["checkbox", "user(avatar+name)", "username", "email", "role", "posts"]
+    },
+    "notFound": {
+      "route": "**",
+      "structure": ["errorCode(404)", "iconContainer", "heading", "paragraph", "backButton"]
+    }
+  },
+
+  "navigation": {
+    "groups": [
+      {
+        "label": "Main",
+        "items": [{ "icon": "home", "label": "Dashboard", "path": "/" }]
+      },
+      {
+        "label": "Content",
+        "items": [
+          { "icon": "file-text", "label": "Posts", "path": "/posts" },
+          { "icon": "image", "label": "Media", "path": "/media" },
+          { "icon": "file", "label": "Pages", "path": "/pages" }
+        ]
+      },
+      {
+        "label": "Extensions",
+        "items": [{ "icon": "puzzle", "label": "Plugins", "path": "/plugins" }]
+      },
+      {
+        "label": "System",
+        "items": [
+          { "icon": "users", "label": "Users", "path": "/users" },
+          { "icon": "settings", "label": "Settings", "path": "/settings" }
+        ]
+      }
+    ],
+    "activeMatchLogic": "exact for '/', startsWith for others"
+  },
+
+  "designRules": {
+    "gradientsOnlyOn": ["dashboard heroBanner", "dashboard statCards", "dashboard sectionAccentBars", "dashboard healthScoreRing"],
+    "solidColorsEverywhere": "All buttons, avatars, toggles, filter pills, badges, plugin indicators, accent bars outside dashboard use flat solid colors",
+    "noDropShadowsOn": ["sidebar avatars", "topbar avatars", "buttons (except dashboard banner CTA)"],
+    "cardStyle": "White bg, slate-200/60 border, shadow-sm shadow-slate-200/50, rounded-2xl",
+    "interactiveStates": {
+      "hover": "Color darken one step OR bg-slate-50/slate-100",
+      "active": "scale-[0.98] on buttons",
+      "focus": "ring-2 ring-indigo-500/30 border-indigo-200 on inputs",
+      "disabled": "opacity-70"
+    },
+    "tableRowHover": "gradient from-slate-50/80 to transparent (subtle directional highlight)",
+    "rowActionPattern": "Hidden by default, revealed on group-hover with transition-opacity"
+  }
+}
