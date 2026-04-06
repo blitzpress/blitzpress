@@ -13,6 +13,9 @@ function createAppConfig() {
   return defineConfig({
     plugins: [solidPlugin()],
     base: "/",
+    server: {
+      host: '0.0.0.0',
+    },
     build: {
       target: "esnext",
       minify: false,
