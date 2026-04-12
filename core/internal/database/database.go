@@ -27,7 +27,6 @@ func Initialize(cfg Config) (*gorm.DB, error) {
 	}
 
 	if err := db.AutoMigrate(
-		&User{},
 		&Setting{},
 		&PluginState{},
 		&PluginSetting{},

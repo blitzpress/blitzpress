@@ -17,23 +17,23 @@ func TestInitializeMigratesModelsAndGeneratesUUIDv7(t *testing.T) {
 		t.Fatalf("Initialize() error = %v", err)
 	}
 
-	user := User{
-		Email:    "admin@example.com",
-		Password: "hashed-password",
+	setting := Setting{
+		Key:   "test_key",
+		Value: "test_value",
 	}
-	if err := db.Create(&user).Error; err != nil {
+	if err := db.Create(&setting).Error; err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
 
-	if user.ID == uuid.Nil {
+	if setting.ID == uuid.Nil {
 		t.Fatal("expected generated uuid")
 	}
 
-	if version := user.ID.Version(); version != 7 {
+	if version := setting.ID.Version(); version != 7 {
 		t.Fatalf("expected uuid v7, got v%d", version)
 	}
 
-	if user.CreatedAt.String() == "" || user.UpdatedAt.String() == "" {
+	if setting.CreatedAt.String() == "" || setting.UpdatedAt.String() == "" {
 		t.Fatal("expected carbon datetime fields to be populated")
 	}
 }

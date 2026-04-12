@@ -39,7 +39,7 @@ func TestPluginRegistryDiscoverLoadAndMountRoutes(t *testing.T) {
 		},
 	})
 
-	registry := NewPluginRegistry(db, nil)
+	registry := NewPluginRegistry(db, nil, nil)
 
 	var loadedIDs []string
 	registry.Hooks().AddAction("plugin.loaded", func(ctx *pluginsdk.HookContext, args ...any) error {
@@ -149,7 +149,7 @@ func TestPluginRegistryFiresLifecycleHooksInDiscoveryOrder(t *testing.T) {
 		source:     simpleRegistryPluginSource("beta-plugin", "Beta Plugin", "1.0.0"),
 	})
 
-	registry := NewPluginRegistry(db, nil)
+	registry := NewPluginRegistry(db, nil, nil)
 	var sequence []string
 	registry.Hooks().AddAction("core.booting", func(ctx *pluginsdk.HookContext, args ...any) error {
 		sequence = append(sequence, "core.booting")
@@ -187,7 +187,7 @@ func TestPluginRegistryStopsWhenCoreBootingHookFails(t *testing.T) {
 		source:     simpleRegistryPluginSource("example-plugin", "Example Plugin", "1.0.0"),
 	})
 
-	registry := NewPluginRegistry(db, nil)
+	registry := NewPluginRegistry(db, nil, nil)
 	var readyCalled bool
 	registry.Hooks().AddAction("core.booting", func(ctx *pluginsdk.HookContext, args ...any) error {
 		return errors.New("boot failed")
@@ -244,7 +244,7 @@ func TestPluginRegistryStoresDisabledPluginsWithoutLoading(t *testing.T) {
 		},
 	})
 
-	registry := NewPluginRegistry(db, nil)
+	registry := NewPluginRegistry(db, nil, nil)
 	var loadedIDs []string
 	registry.Hooks().AddAction("plugin.loaded", func(ctx *pluginsdk.HookContext, args ...any) error {
 		loadedIDs = append(loadedIDs, ctx.PluginID)
@@ -322,7 +322,7 @@ func TestPluginRegistryMountRoutesServesFrontendBuildAssets(t *testing.T) {
 		},
 	})
 
-	registry := NewPluginRegistry(db, nil)
+	registry := NewPluginRegistry(db, nil, nil)
 	if err := registry.DiscoverAndLoad(pluginsDir); err != nil {
 		t.Fatalf("DiscoverAndLoad() error = %v", err)
 	}
@@ -397,7 +397,7 @@ func TestPluginRegistryStoresFailedPluginsAndContinuesLoading(t *testing.T) {
 		source:     failingRegistryPluginSource("bad-plugin", "Bad Plugin", "1.0.0"),
 	})
 
-	registry := NewPluginRegistry(db, nil)
+	registry := NewPluginRegistry(db, nil, nil)
 
 	err := registry.DiscoverAndLoad(pluginsDir)
 	if err == nil {

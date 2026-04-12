@@ -25,15 +25,16 @@ var (
 )
 
 type PluginRegistry struct {
-	plugins map[string]*LoadedPlugin
-	hooks   *HookEngine
-	events  *EventBusImpl
-	mu      sync.RWMutex
-	logger  *slog.Logger
-	db      *gorm.DB
+	plugins      map[string]*LoadedPlugin
+	hooks        *HookEngine
+	events       *EventBusImpl
+	authRegistry pluginsdk.AuthRegistry
+	mu           sync.RWMutex
+	logger       *slog.Logger
+	db           *gorm.DB
 }
 
-func NewPluginRegistry(db *gorm.DB, logger *slog.Logger) *PluginRegistry {
+func NewPluginRegistry(db *gorm.DB, logger *slog.Logger, authRegistry pluginsdk.AuthRegistry) *PluginRegistry {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
@@ -42,11 +43,12 @@ func NewPluginRegistry(db *gorm.DB, logger *slog.Logger) *PluginRegistry {
 	events.Start()
 
 	return &PluginRegistry{
-		plugins: make(map[string]*LoadedPlugin),
-		hooks:   NewHookEngine(),
-		events:  events,
-		logger:  logger,
-		db:      db,
+		plugins:      make(map[string]*LoadedPlugin),
+		hooks:        NewHookEngine(),
+		events:       events,
+		authRegistry: authRegistry,
+		logger:       logger,
+		db:           db,
 	}
 }
 
@@ -104,6 +106,7 @@ func (r *PluginRegistry) DiscoverAndLoad(pluginsDir string) error {
 			Settings: settingsRegistry,
 			Logger:   slogLoggerAdapter{logger: r.logger.With("plugin_id", loaded.Manifest.ID)},
 			Config:   configReader,
+			Auth:     r.authRegistry,
 		}
 
 		if err := loaded.Instance.Register(registrar); err != nil {

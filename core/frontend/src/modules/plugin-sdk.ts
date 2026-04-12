@@ -1,5 +1,6 @@
 export { events, createEventBus } from "../plugin-runtime/events";
 export { hooks, createHookEngine } from "../plugin-runtime/hooks";
+export { http, HttpClient } from "./http";
 export {
   createRegistrar,
   getRuntimeSnapshot,

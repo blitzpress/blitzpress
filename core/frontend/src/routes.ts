@@ -1,6 +1,7 @@
 import { lazy } from "solid-js";
 import type { RouteDefinition } from "@solidjs/router";
 
+const LoginPage = lazy(() => import("./auth/LoginPage"));
 const DashboardPage = lazy(() => import("./dashboard/DashboardPage"));
 const PostsPage = lazy(() => import("./posts/PostsPage"));
 const PostEditorPage = lazy(() => import("./posts/PostEditorPage"));
@@ -14,6 +15,7 @@ const PluginSettingsPage = lazy(() => import("./plugins/PluginSettingsPage"));
 const RuntimeRoutePage = lazy(() => import("./plugins/RuntimeRoutePage"));
 
 export const routes: RouteDefinition[] = [
+  { path: "/login", component: LoginPage },
   { path: "/", component: DashboardPage },
   { path: "/posts", component: PostsPage },
   { path: "/posts/new", component: PostEditorPage },

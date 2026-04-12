@@ -25,4 +25,5 @@ type Registrar struct {
 	Settings SettingsRegistry
 	Logger   Logger
 	Config   ConfigReader
+	Auth     AuthRegistry
 }

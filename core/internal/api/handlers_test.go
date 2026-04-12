@@ -15,11 +15,164 @@ import (
 	"testing/fstest"
 	"time"
 
+	coreauth "github.com/BlitzPress/BlitzPress/core/internal/auth"
 	"github.com/BlitzPress/BlitzPress/core/internal/database"
 	"github.com/BlitzPress/BlitzPress/core/internal/plugins"
+	pluginsdk "github.com/BlitzPress/BlitzPress/plugin-sdk"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
+
+type apiTestAuthDriver struct {
+	token string
+	user  *pluginsdk.AuthUser
+}
+
+func (d apiTestAuthDriver) Authenticate(_ string) (*pluginsdk.AuthUser, error) {
+	return d.user, nil
+}
+
+func (d apiTestAuthDriver) GetLoggedInUser(c *fiber.Ctx) *pluginsdk.AuthUser {
+	user, _ := c.Locals(coreauth.AuthUserKey).(*pluginsdk.AuthUser)
+	return user
+}
+
+func (d apiTestAuthDriver) HasCapability(_ *pluginsdk.AuthUser, _ string) bool {
+	return true
+}
+
+func (d apiTestAuthDriver) GetRoles() []pluginsdk.RoleDefinition {
+	return nil
+}
+
+func (d apiTestAuthDriver) LoginURL() string {
+	return "/login"
+}
+
+func (d apiTestAuthDriver) Login(_ string, _ string) (string, *pluginsdk.AuthUser, error) {
+	return d.token, d.user, nil
+}
+
+func TestAuthLoginHandlerSetsCookieAndReturnsToken(t *testing.T) {
+	t.Parallel()
+
+	registry := coreauth.NewRegistry()
+	registry.RegisterDriver(apiTestAuthDriver{
+		token: "test-token",
+		user: &pluginsdk.AuthUser{
+			ID:          uuid.MustParse("11111111-1111-1111-1111-111111111111"),
+			Email:       "admin@example.com",
+			DisplayName: "Admin",
+			Roles:       []string{"administrator"},
+		},
+	})
+
+	app := fiber.New()
+	app.Post("/api/core/auth/login", AuthLoginHandler(registry))
+
+	req := httptest.NewRequest(http.MethodPost, "/api/core/auth/login", strings.NewReader(`{"email":"admin@example.com","password":"secret"}`))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, resp.StatusCode)
+	}
+
+	var payload struct {
+		Token string              `json:"token"`
+		User  *pluginsdk.AuthUser `json:"user"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("decoding auth login response failed: %v", err)
+	}
+
+	if payload.Token != "test-token" {
+		t.Fatalf("expected token %q, got %q", "test-token", payload.Token)
+	}
+	if payload.User == nil || payload.User.Email != "admin@example.com" {
+		t.Fatalf("unexpected login user payload: %#v", payload.User)
+	}
+
+	cookies := resp.Header.Values("Set-Cookie")
+	if len(cookies) == 0 || !strings.Contains(cookies[0], "bp_session=test-token") {
+		t.Fatalf("expected bp_session cookie to be set, got %v", cookies)
+	}
+}
+
+func TestAuthMeHandlerReturnsCurrentUser(t *testing.T) {
+	t.Parallel()
+
+	registry := coreauth.NewRegistry()
+	expectedUser := &pluginsdk.AuthUser{
+		ID:          uuid.MustParse("22222222-2222-2222-2222-222222222222"),
+		Email:       "viewer@example.com",
+		DisplayName: "Viewer",
+		Roles:       []string{"subscriber"},
+	}
+	registry.RegisterDriver(apiTestAuthDriver{user: expectedUser})
+
+	app := fiber.New()
+	app.Get("/api/core/auth/me", func(c *fiber.Ctx) error {
+		c.Locals(coreauth.AuthUserKey, expectedUser)
+		return AuthMeHandler(registry)(c)
+	})
+
+	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/core/auth/me", nil))
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, resp.StatusCode)
+	}
+
+	var payload struct {
+		User *pluginsdk.AuthUser `json:"user"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("decoding auth me response failed: %v", err)
+	}
+
+	if payload.User == nil || payload.User.ID != expectedUser.ID {
+		t.Fatalf("unexpected auth me payload: %#v", payload.User)
+	}
+}
+
+func TestAuthLogoutHandlerClearsCookieAndReturnsAction(t *testing.T) {
+	t.Parallel()
+
+	app := fiber.New()
+	app.Post("/api/core/auth/logout", AuthLogoutHandler())
+
+	resp, err := app.Test(httptest.NewRequest(http.MethodPost, "/api/core/auth/logout", nil))
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, resp.StatusCode)
+	}
+
+	var payload struct {
+		Action string `json:"action"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("decoding auth logout response failed: %v", err)
+	}
+
+	if payload.Action != "remove-token-from-localstorage" {
+		t.Fatalf("expected logout action remove-token-from-localstorage, got %q", payload.Action)
+	}
+
+	cookies := resp.Header.Values("Set-Cookie")
+	if len(cookies) == 0 || !strings.Contains(cookies[0], "bp_session=") {
+		t.Fatalf("expected bp_session cookie clearing header, got %v", cookies)
+	}
+}
 
 func TestCMSPluginsHandlerReturnsLoadedPlugins(t *testing.T) {
 	t.Parallel()
@@ -433,7 +586,7 @@ func buildAPITestRegistry(t *testing.T, fixtures []apiPluginFixture, db *gorm.DB
 		buildAPITestPlugin(t, pluginsDir, fixture)
 	}
 
-	registry := plugins.NewPluginRegistry(db, nil)
+	registry := plugins.NewPluginRegistry(db, nil, nil)
 	if err := registry.DiscoverAndLoad(pluginsDir); err != nil {
 		t.Fatalf("DiscoverAndLoad() error = %v", err)
 	}

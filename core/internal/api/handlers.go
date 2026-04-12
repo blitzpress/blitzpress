@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	coreauth "github.com/BlitzPress/BlitzPress/core/internal/auth"
 	"github.com/BlitzPress/BlitzPress/core/internal/database"
 	"github.com/BlitzPress/BlitzPress/core/internal/plugins"
 	pluginsdk "github.com/BlitzPress/BlitzPress/plugin-sdk"
@@ -24,6 +25,7 @@ import (
 var colorPattern = regexp.MustCompile(`^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`)
 
 const restartRequestDelay = 250 * time.Millisecond
+const authSessionCookieName = "bp_session"
 
 type pluginListResponse struct {
 	Plugins []pluginListItem `json:"plugins"`
@@ -61,6 +63,107 @@ type pluginSettingsResponse struct {
 
 type settingsPayload struct {
 	Values map[string]any `json:"values"`
+}
+
+type authLoginPayload struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func AuthStatusHandler(authRegistry *coreauth.Registry) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		if authRegistry.HasDriver() {
+			driver := authRegistry.Driver()
+			return c.JSON(fiber.Map{
+				"enabled":   true,
+				"login_url": driver.LoginURL(),
+			})
+		}
+
+		return c.JSON(fiber.Map{
+			"enabled": false,
+		})
+	}
+}
+
+func AuthLoginHandler(authRegistry *coreauth.Registry) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		driver := authRegistry.Driver()
+		if driver == nil {
+			return fiber.NewError(fiber.StatusNotFound, "auth driver not configured")
+		}
+
+		loginDriver, ok := driver.(pluginsdk.AuthLoginDriver)
+		if !ok {
+			return fiber.NewError(fiber.StatusNotFound, "auth login is not supported")
+		}
+
+		var payload authLoginPayload
+		if err := c.BodyParser(&payload); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+		}
+		if payload.Email == "" || payload.Password == "" {
+			return fiber.NewError(fiber.StatusBadRequest, "email and password are required")
+		}
+
+		token, user, err := loginDriver.Login(payload.Email, payload.Password)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
+
+		c.Cookie(&fiber.Cookie{
+			Name:     authSessionCookieName,
+			Value:    token,
+			Path:     "/",
+			HTTPOnly: true,
+			SameSite: "Lax",
+			MaxAge:   int((24 * time.Hour) / time.Second),
+		})
+
+		return c.JSON(fiber.Map{
+			"token": token,
+			"user":  user,
+		})
+	}
+}
+
+func AuthMeHandler(authRegistry *coreauth.Registry) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		driver := authRegistry.Driver()
+		if driver == nil {
+			return fiber.NewError(fiber.StatusNotFound, "auth driver not configured")
+		}
+
+		user := driver.GetLoggedInUser(c)
+		if user == nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "authentication required",
+			})
+		}
+
+		return c.JSON(fiber.Map{
+			"user": user,
+		})
+	}
+}
+
+func AuthLogoutHandler() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		c.Cookie(&fiber.Cookie{
+			Name:     authSessionCookieName,
+			Value:    "",
+			Path:     "/",
+			HTTPOnly: true,
+			SameSite: "Lax",
+			MaxAge:   -1,
+		})
+
+		return c.JSON(fiber.Map{
+			"action": "remove-token-from-localstorage",
+		})
+	}
 }
 
 func CMSPluginsHandler(registry *plugins.PluginRegistry) fiber.Handler {

@@ -2,13 +2,6 @@ package database
 
 import pluginsdk "github.com/BlitzPress/BlitzPress/plugin-sdk"
 
-type User struct {
-	pluginsdk.BaseModel
-	Email    string `gorm:"uniqueIndex;not null"`
-	Password string `gorm:"not null"`
-	Role     string `gorm:"default:'admin'"`
-}
-
 type Setting struct {
 	pluginsdk.BaseModel
 	Key   string `gorm:"uniqueIndex;not null"`

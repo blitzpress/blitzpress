@@ -21,6 +21,7 @@ import (
 	"syscall"
 
 	"github.com/BlitzPress/BlitzPress/core/internal/api"
+	coreauth "github.com/BlitzPress/BlitzPress/core/internal/auth"
 	"github.com/BlitzPress/BlitzPress/core/internal/config"
 	"github.com/BlitzPress/BlitzPress/core/internal/database"
 	"github.com/BlitzPress/BlitzPress/core/internal/plugins"
@@ -51,11 +52,12 @@ var defaultImportMap = browserImportMap{
 const managerPIDEnv = "BLITZPRESS_MANAGER_PID"
 
 type coreApplication struct {
-	config   *config.AppConfig
-	logger   *slog.Logger
-	db       *gorm.DB
-	registry *plugins.PluginRegistry
-	app      *fiber.App
+	config       *config.AppConfig
+	logger       *slog.Logger
+	db           *gorm.DB
+	registry     *plugins.PluginRegistry
+	authRegistry *coreauth.Registry
+	app          *fiber.App
 
 	listening    atomic.Bool
 	shutdownOnce sync.Once
@@ -63,7 +65,8 @@ type coreApplication struct {
 }
 
 type spaHandler struct {
-	assets fs.FS
+	assets       fs.FS
+	authRegistry *coreauth.Registry
 
 	indexOnce sync.Once
 	indexHTML []byte
@@ -133,7 +136,8 @@ func newCoreApplication(cfg *config.AppConfig, logger *slog.Logger) (*coreApplic
 	app.Use(fiberlogger.New())
 	app.Use(fiberrecover.New())
 
-	registry := plugins.NewPluginRegistry(db, logger)
+	authRegistry := coreauth.NewRegistry()
+	registry := plugins.NewPluginRegistry(db, logger, authRegistry)
 	if err := registry.DiscoverAndLoad(cfg.PluginsDir); err != nil {
 		if errors.Is(err, plugins.ErrCoreBootingHook) {
 			registry.EventBus().Stop()
@@ -145,22 +149,36 @@ func newCoreApplication(cfg *config.AppConfig, logger *slog.Logger) (*coreApplic
 	}
 
 	apiRouter := app.Group("/api")
-	registry.MountRoutes(apiRouter, app)
-	apiRouter.Get("/core/plugins", api.CMSPluginsHandler(registry))
-	apiRouter.Get("/core/modules/*", api.CMSModulesHandler(moduleAssets))
-	apiRouter.Get("/core/plugins/all", api.AdminPluginsHandler(registry))
-	apiRouter.Put("/core/plugins/:id/enabled", api.AdminPluginToggleHandler(registry, db, newManagedRestartRequester(logger)))
-	apiRouter.Get("/core/plugins/:id/settings", api.PluginSettingsGetHandler(registry, db))
-	apiRouter.Put("/core/plugins/:id/settings", api.PluginSettingsPutHandler(registry, db))
 
-	app.Use(newSPAHandler(staticAssets).Handle)
+	authMW := coreauth.AdminAuthMiddleware(authRegistry)
+	apiRouter.Get("/core/modules/*", api.CMSModulesHandler(moduleAssets))
+
+	coreAuthAPI := apiRouter.Group("/core/auth")
+	coreAuthAPI.Get("/status", api.AuthStatusHandler(authRegistry))
+	coreAuthAPI.Post("/login", api.AuthLoginHandler(authRegistry))
+	coreAuthAPI.Post("/logout", api.AuthLogoutHandler())
+	coreAuthAPI.Get("/me", authMW, api.AuthMeHandler(authRegistry))
+
+	protectedAPI := apiRouter.Group("/core", authMW)
+	protectedAPI.Get("/plugins", api.CMSPluginsHandler(registry))
+	protectedAPI.Get("/plugins/all", api.AdminPluginsHandler(registry))
+	protectedAPI.Put("/plugins/:id/enabled", api.AdminPluginToggleHandler(registry, db, newManagedRestartRequester(logger)))
+	protectedAPI.Get("/plugins/:id/settings", api.PluginSettingsGetHandler(registry, db))
+	protectedAPI.Put("/plugins/:id/settings", api.PluginSettingsPutHandler(registry, db))
+
+	registry.MountRoutes(apiRouter, app)
+
+	spaH := newSPAHandler(staticAssets)
+	spaH.authRegistry = authRegistry
+	app.Use(spaH.Handle)
 
 	return &coreApplication{
-		config:   cfg,
-		logger:   logger,
-		db:       db,
-		registry: registry,
-		app:      app,
+		config:       cfg,
+		logger:       logger,
+		db:           db,
+		registry:     registry,
+		authRegistry: authRegistry,
+		app:          app,
 	}, nil
 }
 
@@ -289,6 +307,20 @@ func (h *spaHandler) Handle(c *fiber.Ctx) error {
 		}
 	}
 
+	if h.authRegistry != nil && !h.isPublicSPARoute(c.Path()) {
+		if driver := h.authRegistry.Driver(); driver != nil {
+			token := coreauth.ExtractToken(c)
+			if token == "" {
+				return c.Redirect(driver.LoginURL(), fiber.StatusFound)
+			}
+
+			user, err := driver.Authenticate(token)
+			if err != nil || user == nil {
+				return c.Redirect(driver.LoginURL(), fiber.StatusFound)
+			}
+		}
+	}
+
 	indexHTML, err := h.injectedIndexHTML()
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
@@ -296,6 +328,10 @@ func (h *spaHandler) Handle(c *fiber.Ctx) error {
 
 	c.Type("html", "utf-8")
 	return c.Send(indexHTML)
+}
+
+func (h *spaHandler) isPublicSPARoute(reqPath string) bool {
+	return reqPath == "/login" || strings.HasPrefix(reqPath, "/login/")
 }
 
 func (h *spaHandler) injectedIndexHTML() ([]byte, error) {

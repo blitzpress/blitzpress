@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+var authToken string
+
 func TestBuildAllAndRunCoreBinaryWithExamplePlugin(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping build-all end-to-end test in short mode")
@@ -50,26 +52,46 @@ func TestBuildAllAndRunCoreBinaryWithExamplePlugin(t *testing.T) {
 		stopCoreE2EProcess(t, cmd, &logs)
 	})
 
-	waitForCoreE2EReady(t, baseURL+"/api/core/plugins", &logs)
+	waitForCoreE2EReady(t, baseURL+"/api/core/auth/status", &logs)
 
+	var loginResult struct {
+		Token string `json:"token"`
+	}
+	coreE2EPostJSON(t, baseURL+"/api/core/auth/login",
+		`{"email":"admin@blitzpress.local","password":"admin"}`, &loginResult)
+	if loginResult.Token == "" {
+		t.Fatalf("expected login token, got empty string")
+	}
+	authToken = loginResult.Token
+
+	type pluginEntry struct {
+		ID            string `json:"id"`
+		Name          string `json:"name"`
+		Version       string `json:"version"`
+		HasFrontend   bool   `json:"has_frontend"`
+		FrontendEntry string `json:"frontend_entry"`
+		FrontendStyle string `json:"frontend_style"`
+	}
 	var pluginList struct {
-		Plugins []struct {
-			ID            string `json:"id"`
-			Name          string `json:"name"`
-			Version       string `json:"version"`
-			HasFrontend   bool   `json:"has_frontend"`
-			FrontendEntry string `json:"frontend_entry"`
-			FrontendStyle string `json:"frontend_style"`
-		} `json:"plugins"`
+		Plugins []pluginEntry `json:"plugins"`
 	}
 	coreE2EGetJSON(t, baseURL+"/api/core/plugins", &pluginList)
 
-	if len(pluginList.Plugins) != 1 {
-		t.Fatalf("expected 1 loaded plugin, got %#v", pluginList.Plugins)
+	if len(pluginList.Plugins) < 1 {
+		t.Fatalf("expected at least 1 loaded plugin, got %#v", pluginList.Plugins)
 	}
 
-	plugin := pluginList.Plugins[0]
-	if plugin.ID != "example-plugin" || plugin.Name != "Example Plugin" || plugin.Version != "0.1.0" {
+	var plugin pluginEntry
+	for _, p := range pluginList.Plugins {
+		if p.ID == "example-plugin" {
+			plugin = p
+			break
+		}
+	}
+	if plugin.ID == "" {
+		t.Fatalf("example-plugin not found in loaded plugins: %#v", pluginList.Plugins)
+	}
+	if plugin.Name != "Example Plugin" || plugin.Version != "0.1.0" {
 		t.Fatalf("unexpected plugin list entry: %#v", plugin)
 	}
 	if !plugin.HasFrontend {
@@ -138,17 +160,30 @@ func TestBuildAllAndRunCoreBinaryWithExamplePlugin(t *testing.T) {
 	if !hooksStatus.CoreReadyReceived {
 		t.Fatalf("expected core.ready hook to have fired in example plugin")
 	}
-	if len(hooksStatus.MenuItems) != 1 {
-		t.Fatalf("expected 1 menu item from admin.menu.items filter, got %d", len(hooksStatus.MenuItems))
+	if len(hooksStatus.MenuItems) < 1 {
+		t.Fatalf("expected at least 1 menu item from admin.menu.items filter, got %d", len(hooksStatus.MenuItems))
 	}
-	if hooksStatus.MenuItems[0].ID != "example-plugin.home" {
-		t.Fatalf("expected menu item id %q, got %q", "example-plugin.home", hooksStatus.MenuItems[0].ID)
+
+	var exampleMenuItem *struct {
+		ID    string `json:"id"`
+		Label string `json:"label"`
+		Icon  string `json:"icon"`
+		Path  string `json:"path"`
 	}
-	if hooksStatus.MenuItems[0].Label != "Example Plugin" {
-		t.Fatalf("expected menu item label %q, got %q", "Example Plugin", hooksStatus.MenuItems[0].Label)
+	for i := range hooksStatus.MenuItems {
+		if hooksStatus.MenuItems[i].ID == "example-plugin.home" {
+			exampleMenuItem = &hooksStatus.MenuItems[i]
+			break
+		}
 	}
-	if hooksStatus.MenuItems[0].Path != "/plugins/example-plugin" {
-		t.Fatalf("expected menu item path %q, got %q", "/plugins/example-plugin", hooksStatus.MenuItems[0].Path)
+	if exampleMenuItem == nil {
+		t.Fatalf("expected example-plugin.home menu item, got %#v", hooksStatus.MenuItems)
+	}
+	if exampleMenuItem.Label != "Example Plugin" {
+		t.Fatalf("expected menu item label %q, got %q", "Example Plugin", exampleMenuItem.Label)
+	}
+	if exampleMenuItem.Path != "/plugins/example-plugin" {
+		t.Fatalf("expected menu item path %q, got %q", "/plugins/example-plugin", exampleMenuItem.Path)
 	}
 
 	var publishResult struct {
@@ -354,6 +389,9 @@ func coreE2ERequest(t *testing.T, method, url, body string) *http.Response {
 	}
 	if body != "" {
 		request.Header.Set("Content-Type", "application/json")
+	}
+	if authToken != "" {
+		request.Header.Set("Authorization", "Bearer "+authToken)
 	}
 
 	response, err := (&http.Client{Timeout: 5 * time.Second}).Do(request)

@@ -12,6 +12,7 @@ type AppConfig struct {
 	DBDSN      string
 	PluginsDir string
 	LogLevel   string
+	AuthSecret string
 }
 
 func Load() *AppConfig {
@@ -21,6 +22,7 @@ func Load() *AppConfig {
 		DBDSN:      envOrDefault("BLITZPRESS_DB_DSN", "blitzpress.db"),
 		PluginsDir: envOrDefault("BLITZPRESS_PLUGINS_DIR", "./build/plugins"),
 		LogLevel:   envOrDefault("BLITZPRESS_LOG_LEVEL", "info"),
+		AuthSecret: envOrDefault("BLITZPRESS_AUTH_SECRET", "blitzpress-dev-secret-change-me"),
 	}
 }
 

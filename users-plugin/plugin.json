@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "users-plugin",
+  "name": "Users & Authentication",
+  "version": "0.1.0",
+  "description": "User management, roles, capabilities, and authentication for BlitzPress.",
+  "author": "BlitzPress",
+  "sdk_version": "0.1.0",
+  "has_frontend": true,
+  "frontend_entry": "frontend/assets/index.js",
+  "frontend_style": "frontend/assets/index.css",
+  "capabilities": [
+    "api.routes",
+    "hooks",
+    "frontend.pages",
+    "auth.driver"
+  ]
+}
