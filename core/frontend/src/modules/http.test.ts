@@ -9,7 +9,7 @@ const filterIDs: string[] = [];
 afterEach(() => {
   globalThis.fetch = originalFetch;
   while (filterIDs.length > 0) {
-    hooks.removeFilter("core/http:requestAfterProcess", filterIDs.pop()!);
+    hooks.removeFilter("core.http:request.after.process", filterIDs.pop()!);
   }
 });
 
@@ -76,7 +76,7 @@ describe("http client", () => {
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     filterIDs.push(
-      hooks.addFilter<HttpClient>("core/http:requestAfterProcess", (client) => client.withBearerToken("hook-token")),
+      hooks.addFilter<HttpClient>("core.http:request.after.process", (client) => client.withBearerToken("hook-token")),
     );
 
     const response = await http()

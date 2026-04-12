@@ -15,14 +15,14 @@ registerPlugin(
   },
   (registrar) => {
     registrar.hooks.addFilter<HttpClient>(
-      "core/http:requestAfterProcess",
+      "core.http:request.after.process",
       (client, _url, _requestInit) => {
         const token = getStoredAuthToken();
         if (!token) {
           return client;
         }
 
-        return (client as HttpClient).withBearerToken(token);
+        return client.withBearerToken(token);
       },
       { priority: 5 },
     );

@@ -131,7 +131,7 @@ export class HttpClient {
 
     const self = this.clone({ headers });
     const nextSelf = hooks.applyFilters<HttpClient>(
-      "core/http:requestAfterProcess",
+      "core.http:request.after.process",
       self,
       url,
       requestInit,
