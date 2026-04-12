@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"errors"
 	"fmt"
 
@@ -13,6 +14,9 @@ const (
 	pluginName    = "Users & Authentication"
 	pluginVersion = "0.1.0"
 )
+
+//go:embed all:frontend_embed
+var frontendFiles embed.FS
 
 type UsersPlugin struct{}
 
@@ -65,6 +69,10 @@ func (p UsersPlugin) Register(r *pluginsdk.Registrar) error {
 	if err := r.HTTP.API(func(router fiber.Router) {
 		registerRoutes(router, driver, r.DB, cache)
 	}); err != nil {
+		return err
+	}
+
+	if err := r.HTTP.Static(frontendFiles, "frontend_embed/assets"); err != nil {
 		return err
 	}
 
