@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/BlitzPress/BlitzPress/core/internal/database"
 	"github.com/BlitzPress/BlitzPress/core/internal/plugins"
@@ -199,7 +200,13 @@ func TestAdminPluginToggleHandler(t *testing.T) {
 	}, db)
 
 	app := fiber.New()
-	app.Put("/api/core/plugins/:id/enabled", AdminPluginToggleHandler(registry, db))
+	restartRequested := make(chan struct{}, 2)
+	app.Put("/api/core/plugins/:id/enabled", AdminPluginToggleHandler(registry, db, func() {
+		select {
+		case restartRequested <- struct{}{}:
+		default:
+		}
+	}))
 
 	disableBody := `{"enabled": false}`
 	req := httptest.NewRequest(http.MethodPut, "/api/core/plugins/toggle-plugin/enabled", strings.NewReader(disableBody))
@@ -228,6 +235,9 @@ func TestAdminPluginToggleHandler(t *testing.T) {
 	if toggleResp.Plugin.Enabled {
 		t.Fatalf("expected enabled=false after disabling")
 	}
+	if !toggleResp.RestartRequired {
+		t.Fatalf("expected restart_required=true when disabling a loaded plugin")
+	}
 
 	var state database.PluginState
 	if err := db.Where("plugin_id = ?", "toggle-plugin").First(&state).Error; err != nil {
@@ -235,6 +245,56 @@ func TestAdminPluginToggleHandler(t *testing.T) {
 	}
 	if state.Enabled {
 		t.Fatalf("expected DB state enabled=false")
+	}
+
+	select {
+	case <-restartRequested:
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for disable restart request callback")
+	}
+
+	enableBody := `{"enabled": true}`
+	enableReq := httptest.NewRequest(http.MethodPut, "/api/core/plugins/toggle-plugin/enabled", strings.NewReader(enableBody))
+	enableReq.Header.Set("Content-Type", "application/json")
+	enableResp, err := app.Test(enableReq)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	if enableResp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(enableResp.Body)
+		t.Fatalf("expected status %d, got %d: %s", http.StatusOK, enableResp.StatusCode, body)
+	}
+
+	var enableToggleResp struct {
+		Plugin          adminPluginListItem `json:"plugin"`
+		RestartRequired bool                `json:"restart_required"`
+	}
+	if err := json.NewDecoder(enableResp.Body).Decode(&enableToggleResp); err != nil {
+		t.Fatalf("decoding enable toggle response failed: %v", err)
+	}
+
+	if !enableToggleResp.Plugin.Enabled {
+		t.Fatalf("expected enabled=true after enabling")
+	}
+	if enableToggleResp.Plugin.Status != "disabled" {
+		t.Fatalf("expected status to remain 'disabled' until restart, got %q", enableToggleResp.Plugin.Status)
+	}
+	if !enableToggleResp.RestartRequired {
+		t.Fatalf("expected restart_required=true when enabling a disabled plugin")
+	}
+
+	if err := db.Where("plugin_id = ?", "toggle-plugin").First(&state).Error; err != nil {
+		t.Fatalf("reading enabled plugin state from DB: %v", err)
+	}
+	if !state.Enabled {
+		t.Fatalf("expected DB state enabled=true after enabling")
+	}
+
+	select {
+	case <-restartRequested:
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for enable restart request callback")
 	}
 }
 

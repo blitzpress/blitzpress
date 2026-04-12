@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/BlitzPress/BlitzPress/core/internal/database"
 	"github.com/BlitzPress/BlitzPress/core/internal/plugins"
@@ -21,6 +22,8 @@ import (
 )
 
 var colorPattern = regexp.MustCompile(`^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`)
+
+const restartRequestDelay = 250 * time.Millisecond
 
 type pluginListResponse struct {
 	Plugins []pluginListItem `json:"plugins"`
@@ -121,7 +124,12 @@ func AdminPluginsHandler(registry *plugins.PluginRegistry) fiber.Handler {
 	}
 }
 
-func AdminPluginToggleHandler(registry *plugins.PluginRegistry, db *gorm.DB) fiber.Handler {
+func AdminPluginToggleHandler(registry *plugins.PluginRegistry, db *gorm.DB, restartRequests ...func()) fiber.Handler {
+	var requestRestart func()
+	if len(restartRequests) > 0 {
+		requestRestart = restartRequests[0]
+	}
+
 	return func(c *fiber.Ctx) error {
 		pluginID := c.Params("id")
 
@@ -129,6 +137,7 @@ func AdminPluginToggleHandler(registry *plugins.PluginRegistry, db *gorm.DB) fib
 		if !ok {
 			return fiber.NewError(fiber.StatusNotFound, "plugin not found")
 		}
+		wasEnabled := plugin.Enabled
 
 		var body struct {
 			Enabled bool `json:"enabled"`
@@ -169,7 +178,11 @@ func AdminPluginToggleHandler(registry *plugins.PluginRegistry, db *gorm.DB) fib
 			item.Errors = append(item.Errors, err.Error())
 		}
 
-		restartRequired := body.Enabled && plugin.Status == "disabled"
+		restartRequired := wasEnabled != body.Enabled
+		if restartRequired && requestRestart != nil {
+			time.AfterFunc(restartRequestDelay, requestRestart)
+		}
+
 		return c.JSON(fiber.Map{
 			"plugin":           item,
 			"restart_required": restartRequired,

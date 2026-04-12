@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -46,6 +47,8 @@ var defaultImportMap = browserImportMap{
 		"@blitzpress/plugin-sdk": "/api/core/modules/plugin-sdk.js",
 	},
 }
+
+const managerPIDEnv = "BLITZPRESS_MANAGER_PID"
 
 type coreApplication struct {
 	config   *config.AppConfig
@@ -146,7 +149,7 @@ func newCoreApplication(cfg *config.AppConfig, logger *slog.Logger) (*coreApplic
 	apiRouter.Get("/core/plugins", api.CMSPluginsHandler(registry))
 	apiRouter.Get("/core/modules/*", api.CMSModulesHandler(moduleAssets))
 	apiRouter.Get("/core/plugins/all", api.AdminPluginsHandler(registry))
-	apiRouter.Put("/core/plugins/:id/enabled", api.AdminPluginToggleHandler(registry, db))
+	apiRouter.Put("/core/plugins/:id/enabled", api.AdminPluginToggleHandler(registry, db, newManagedRestartRequester(logger)))
 	apiRouter.Get("/core/plugins/:id/settings", api.PluginSettingsGetHandler(registry, db))
 	apiRouter.Put("/core/plugins/:id/settings", api.PluginSettingsPutHandler(registry, db))
 
@@ -159,6 +162,35 @@ func newCoreApplication(cfg *config.AppConfig, logger *slog.Logger) (*coreApplic
 		registry: registry,
 		app:      app,
 	}, nil
+}
+
+func newManagedRestartRequester(logger *slog.Logger) func() {
+	managerPID := strings.TrimSpace(os.Getenv(managerPIDEnv))
+	if managerPID == "" {
+		return nil
+	}
+
+	pid, err := strconv.Atoi(managerPID)
+	if err != nil {
+		if logger != nil {
+			logger.Warn("ignoring invalid managed restart target", "manager_pid", managerPID, "error", err)
+		}
+
+		return nil
+	}
+	if pid <= 0 || pid == os.Getpid() {
+		if logger != nil {
+			logger.Warn("ignoring invalid managed restart target", "manager_pid", managerPID)
+		}
+
+		return nil
+	}
+
+	return func() {
+		if err := syscall.Kill(pid, syscall.SIGUSR1); err != nil && logger != nil {
+			logger.Warn("request managed restart failed", "manager_pid", pid, "error", err)
+		}
+	}
 }
 
 func (a *coreApplication) Listen() error {

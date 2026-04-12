@@ -17,7 +17,8 @@ import (
 
 const usageText = `Usage:
   blitzpress-manager list
-  blitzpress-manager build <plugin-directory>`
+  blitzpress-manager build <plugin-directory>
+  blitzpress-manager serve`
 
 var errUsageDisplayed = errors.New("usage displayed")
 
@@ -86,6 +87,7 @@ func newRootCommand(cwd string, stdout, stderr io.Writer, runner commandRunner) 
 	rootCmd.AddCommand(
 		newListCommand(cwd, stdout),
 		newBuildCommand(cwd, runner),
+		newServeCommand(cwd, stdout, stderr),
 	)
 
 	return rootCmd
