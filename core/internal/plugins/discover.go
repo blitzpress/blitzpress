@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 )
 
@@ -87,13 +88,13 @@ func discoverPlugin(pluginDir string) (DiscoveredPlugin, error) {
 		return DiscoveredPlugin{}, err
 	}
 
-	soPath := filepath.Join(pluginDir, "plugin.so")
+	soPath := filepath.Join(pluginDir, PluginSOFilename())
 	soInfo, err := os.Stat(soPath)
 	if err != nil {
-		return DiscoveredPlugin{}, fmt.Errorf("plugin.so not found: %w", err)
+		return DiscoveredPlugin{}, fmt.Errorf("%s not found: %w", PluginSOFilename(), err)
 	}
 	if soInfo.IsDir() {
-		return DiscoveredPlugin{}, errors.New("plugin.so must be a file")
+		return DiscoveredPlugin{}, fmt.Errorf("%s must be a file", PluginSOFilename())
 	}
 
 	return DiscoveredPlugin{
@@ -101,6 +102,10 @@ func discoverPlugin(pluginDir string) (DiscoveredPlugin, error) {
 		Dir:          pluginDir,
 		SOPath:       soPath,
 	}, nil
+}
+
+func PluginSOFilename() string {
+	return fmt.Sprintf("plugin-%s-%s.so", runtime.GOOS, runtime.GOARCH)
 }
 
 func validateManifest(manifest PluginManifestFile) error {

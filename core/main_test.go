@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/BlitzPress/BlitzPress/core/internal/config"
+	"github.com/BlitzPress/BlitzPress/core/internal/plugins"
 	pluginsdk "github.com/BlitzPress/BlitzPress/plugin-sdk"
 )
 
@@ -265,7 +266,7 @@ replace github.com/BlitzPress/BlitzPress/plugin-sdk => %s
 		writeMainTestFile(t, filePath, contents)
 	}
 
-	cmd := exec.Command(mainTestGoBinary(t), "build", "-mod=mod", "-buildmode=plugin", "-o", filepath.Join(pluginDir, "plugin.so"), ".")
+	cmd := exec.Command(mainTestGoBinary(t), "build", "-mod=mod", "-buildmode=plugin", "-o", filepath.Join(pluginDir, plugins.PluginSOFilename()), ".")
 	cmd.Dir = pluginDir
 	cmd.Env = append(os.Environ(), "CGO_ENABLED=1")
 	output, err := cmd.CombinedOutput()

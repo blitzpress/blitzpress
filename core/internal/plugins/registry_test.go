@@ -234,13 +234,13 @@ func TestPluginRegistryStoresDisabledPluginsWithoutLoading(t *testing.T) {
 		version:     "1.0.0",
 		sdkVersion:  pluginsdk.SDKVersion,
 		hasFrontend: true,
-		source:      successfulRegistryPluginSource("disabled-plugin", "Disabled Plugin", "1.0.0"),
+		source:      frontendEmbedRegistryPluginSource("disabled-plugin", "Disabled Plugin", "1.0.0"),
 		staticFiles: map[string]string{
 			"static/hello.txt": "disabled asset",
 		},
-		buildFiles: map[string]string{
-			"frontend/assets/index.js":  `console.log("disabled frontend");`,
-			"frontend/assets/index.css": ".disabled{color:gray;}",
+		embeddedFrontendFiles: map[string]string{
+			"frontend_embed/assets/index.js":  `console.log("disabled frontend");`,
+			"frontend_embed/assets/index.css": ".disabled{color:gray;}",
 		},
 	})
 
@@ -315,10 +315,10 @@ func TestPluginRegistryMountRoutesServesFrontendBuildAssets(t *testing.T) {
 		version:     "1.0.0",
 		sdkVersion:  pluginsdk.SDKVersion,
 		hasFrontend: true,
-		source:      simpleRegistryPluginSource("example-plugin", "Example Plugin", "1.0.0"),
-		buildFiles: map[string]string{
-			"frontend/assets/index.js":  `console.log("example frontend");`,
-			"frontend/assets/index.css": ".example{color:red;}",
+		source:      frontendEmbedRegistryPluginSource("example-plugin", "Example Plugin", "1.0.0"),
+		embeddedFrontendFiles: map[string]string{
+			"frontend_embed/assets/index.js":  `console.log("example frontend");`,
+			"frontend_embed/assets/index.css": ".example{color:red;}",
 		},
 	})
 
@@ -428,14 +428,14 @@ func TestPluginRegistryStoresFailedPluginsAndContinuesLoading(t *testing.T) {
 }
 
 type registryPluginFixture struct {
-	id          string
-	name        string
-	version     string
-	sdkVersion  string
-	hasFrontend bool
-	source      string
-	staticFiles map[string]string
-	buildFiles  map[string]string
+	id                    string
+	name                  string
+	version               string
+	sdkVersion            string
+	hasFrontend           bool
+	source                string
+	staticFiles           map[string]string
+	embeddedFrontendFiles map[string]string
 }
 
 func buildRegistryPlugin(t *testing.T, pluginsDir string, fixture registryPluginFixture) string {
@@ -465,7 +465,7 @@ replace github.com/BlitzPress/BlitzPress/plugin-sdk => %s
 
 		writeFile(t, path, contents)
 	}
-	for name, contents := range fixture.buildFiles {
+	for name, contents := range fixture.embeddedFrontendFiles {
 		path := filepath.Join(pluginDir, filepath.FromSlash(name))
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			t.Fatalf("MkdirAll(%q) error = %v", filepath.Dir(path), err)
@@ -474,7 +474,7 @@ replace github.com/BlitzPress/BlitzPress/plugin-sdk => %s
 		writeFile(t, path, contents)
 	}
 
-	cmd := exec.Command(goBinary(t), "build", "-mod=mod", "-buildmode=plugin", "-o", filepath.Join(pluginDir, "plugin.so"), ".")
+	cmd := exec.Command(goBinary(t), "build", "-mod=mod", "-buildmode=plugin", "-o", filepath.Join(pluginDir, PluginSOFilename()), ".")
 	cmd.Dir = pluginDir
 	cmd.Env = append(os.Environ(), "CGO_ENABLED=1")
 	output, err := cmd.CombinedOutput()
@@ -578,6 +578,32 @@ func (registryPlugin) Manifest() pluginsdk.Manifest {
 
 func (registryPlugin) Register(r *pluginsdk.Registrar) error {
 	return nil
+}
+
+var Plugin pluginsdk.Plugin = registryPlugin{}
+`, id, name, version)
+}
+
+func frontendEmbedRegistryPluginSource(id, name, version string) string {
+	return fmt.Sprintf(`package main
+
+import (
+	"embed"
+
+	pluginsdk "github.com/BlitzPress/BlitzPress/plugin-sdk"
+)
+
+//go:embed all:frontend_embed
+var frontendFiles embed.FS
+
+type registryPlugin struct{}
+
+func (registryPlugin) Manifest() pluginsdk.Manifest {
+	return pluginsdk.Manifest{ID: %q, Name: %q, Version: %q}
+}
+
+func (registryPlugin) Register(r *pluginsdk.Registrar) error {
+	return r.HTTP.Static(frontendFiles, "frontend_embed/assets")
 }
 
 var Plugin pluginsdk.Plugin = registryPlugin{}

@@ -174,7 +174,7 @@ require github.com/BlitzPress/BlitzPress/plugin-sdk v0.0.0
 replace github.com/BlitzPress/BlitzPress/plugin-sdk => %s
 `, testModuleName(t, pluginDir), pluginSDKDir(t)))
 
-	soPath := filepath.Join(pluginDir, "plugin.so")
+	soPath := filepath.Join(pluginDir, PluginSOFilename())
 	cmd := exec.Command(goBinary(t), "build", "-mod=mod", "-buildmode=plugin", "-o", soPath, ".")
 	cmd.Dir = pluginDir
 	cmd.Env = append(os.Environ(), "CGO_ENABLED=1")

@@ -33,7 +33,7 @@ func TestDiscoverReturnsValidPlugins(t *testing.T) {
 		t.Fatalf("expected plugin dir %q, got %q", pluginDir, plugin.Dir)
 	}
 
-	wantSOPath := filepath.Join(pluginDir, "plugin.so")
+	wantSOPath := filepath.Join(pluginDir, PluginSOFilename())
 	if plugin.SOPath != wantSOPath {
 		t.Fatalf("expected .so path %q, got %q", wantSOPath, plugin.SOPath)
 	}
@@ -224,7 +224,7 @@ func TestDiscoverRejectsPluginsWithoutSharedObject(t *testing.T) {
 		t.Fatalf("expected no discovered plugins, got %d", len(discovered))
 	}
 
-	assertSingleErrorContains(t, errs, "plugin.so")
+	assertSingleErrorContains(t, errs, PluginSOFilename())
 }
 
 func TestDiscoverRequiresFrontendFieldsWhenFrontendIsEnabled(t *testing.T) {
@@ -317,7 +317,7 @@ func writePlugin(t *testing.T, pluginsDir, dirName, manifest string, withManifes
 	}
 
 	if withSO {
-		writeFile(t, filepath.Join(pluginDir, "plugin.so"), "")
+		writeFile(t, filepath.Join(pluginDir, PluginSOFilename()), "")
 	}
 
 	return pluginDir

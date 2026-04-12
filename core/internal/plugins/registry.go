@@ -7,7 +7,6 @@ import (
 	"io/fs"
 	"log/slog"
 	"mime"
-	"os"
 	"path"
 	"sort"
 	"strings"
@@ -246,9 +245,7 @@ func (r *PluginRegistry) MountRoutes(api fiber.Router, root fiber.Router) {
 		}
 
 		if len(plugin.Statics) == 0 {
-			if !plugin.ManifestFile.HasFrontend {
-				continue
-			}
+			continue
 		}
 
 		pluginStatic := root.Group("/plugins/" + plugin.Manifest.ID + "/assets")
@@ -337,17 +334,7 @@ func (r *PluginRegistry) servePluginStaticAssets(plugin *LoadedPlugin) fiber.Han
 }
 
 func pluginStaticMounts(plugin *LoadedPlugin) []registeredStatic {
-	mounts := make([]registeredStatic, 0, len(plugin.Statics)+1)
-	if plugin.ManifestFile.HasFrontend && strings.TrimSpace(plugin.Path) != "" {
-		mounts = append(mounts, registeredStatic{
-			pluginID:    plugin.Manifest.ID,
-			filesystem:  os.DirFS(plugin.Path),
-			stripPrefix: "frontend/assets",
-		})
-	}
-
-	mounts = append(mounts, plugin.Statics...)
-	return mounts
+	return plugin.Statics
 }
 
 func normalizePluginAssetPath(assetPath string) (string, bool) {

@@ -5,6 +5,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_ROOT="$ROOT_DIR/build/plugins"
 
+DEFAULT_PLATFORMS="$(go env GOOS)/$(go env GOARCH)"
+ALL_PLATFORMS="linux/amd64 linux/arm64 darwin/amd64 darwin/arm64"
+
 log() {
   printf '==> %s\n' "$*"
 }
@@ -37,7 +40,7 @@ resolve_plugin_dir() {
   local plugin_input="$1"
 
   if [[ -z "$plugin_input" ]]; then
-    fail "usage: $0 <plugin-directory>"
+    fail "usage: $0 <plugin-directory> [--all-platforms]"
   fi
 
   if [[ -d "$plugin_input" ]]; then
@@ -70,11 +73,11 @@ print(has_frontend)
 PY
 }
 
-copy_frontend_assets() {
+stage_frontend_assets() {
   local plugin_dir="$1"
-  local output_dir="$2"
   local frontend_dir="$plugin_dir/frontend"
   local dist_dir="$frontend_dir/dist/frontend"
+  local embed_dir="$plugin_dir/frontend_embed/assets"
 
   if [[ ! -d "$frontend_dir" ]]; then
     fail "frontend directory not found for plugin: $frontend_dir"
@@ -96,15 +99,59 @@ copy_frontend_assets() {
     fail "expected plugin frontend build output not found: $dist_dir"
   fi
 
-  mkdir -p "$output_dir/frontend"
-  cp -R "$dist_dir/." "$output_dir/frontend/"
+  log "Staging frontend assets into frontend_embed/"
+  rm -rf "$embed_dir"
+  mkdir -p "$embed_dir"
+  cp -R "$dist_dir/assets/." "$embed_dir/"
+}
+
+cleanup_frontend_staging() {
+  local plugin_dir="$1"
+  local embed_assets="$plugin_dir/frontend_embed/assets"
+
+  if [[ -d "$embed_assets" ]]; then
+    rm -rf "$embed_assets"
+  fi
+}
+
+build_plugin_so() {
+  local plugin_dir="$1"
+  local output_dir="$2"
+  local target_os="$3"
+  local target_arch="$4"
+  local so_name="plugin-${target_os}-${target_arch}.so"
+
+  log "Building plugin .so for ${target_os}/${target_arch}"
+  (
+    cd "$plugin_dir"
+    CGO_ENABLED=1 GOOS="$target_os" GOARCH="$target_arch" \
+      go build -buildvcs=false -buildmode=plugin -o "$output_dir/$so_name" .
+  )
 }
 
 require_command bun
 require_command go
 require_command python3
 
-PLUGIN_DIR="$(resolve_plugin_dir "${1:-}")"
+PLUGIN_INPUT=""
+BUILD_ALL_PLATFORMS=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --all-platforms)
+      BUILD_ALL_PLATFORMS=true
+      ;;
+    *)
+      if [[ -z "$PLUGIN_INPUT" ]]; then
+        PLUGIN_INPUT="$arg"
+      else
+        fail "unexpected argument: $arg"
+      fi
+      ;;
+  esac
+done
+
+PLUGIN_DIR="$(resolve_plugin_dir "${PLUGIN_INPUT}")"
 MANIFEST_PATH="$PLUGIN_DIR/plugin.json"
 
 if [[ ! -f "$MANIFEST_PATH" ]]; then
@@ -125,16 +172,26 @@ log "Preparing output directory for $PLUGIN_ID"
 recreate_dir "$OUTPUT_DIR"
 
 if [[ "$HAS_FRONTEND" == "true" ]]; then
-  copy_frontend_assets "$PLUGIN_DIR" "$OUTPUT_DIR"
+  stage_frontend_assets "$PLUGIN_DIR"
+fi
+
+trap 'cleanup_frontend_staging "$PLUGIN_DIR"' EXIT
+
+if [[ "$BUILD_ALL_PLATFORMS" == true ]]; then
+  for platform in $ALL_PLATFORMS; do
+    target_os="${platform%/*}"
+    target_arch="${platform#*/}"
+    if ! build_plugin_so "$PLUGIN_DIR" "$OUTPUT_DIR" "$target_os" "$target_arch" 2>/dev/null; then
+      log "Warning: skipped ${target_os}/${target_arch} (cross-compilation toolchain not available)"
+    fi
+  done
+else
+  target_os="$(go env GOOS)"
+  target_arch="$(go env GOARCH)"
+  build_plugin_so "$PLUGIN_DIR" "$OUTPUT_DIR" "$target_os" "$target_arch"
 fi
 
 log "Copying plugin manifest"
 cp "$MANIFEST_PATH" "$OUTPUT_DIR/plugin.json"
-
-log "Building plugin shared object for $PLUGIN_ID"
-(
-  cd "$PLUGIN_DIR"
-  go build -buildvcs=false -buildmode=plugin -o "$OUTPUT_DIR/plugin.so" .
-)
 
 log "Plugin build completed: $OUTPUT_DIR"

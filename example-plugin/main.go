@@ -27,6 +27,9 @@ const (
 //go:embed static/*
 var staticFiles embed.FS
 
+//go:embed all:frontend_embed
+var frontendFiles embed.FS
+
 type ExamplePlugin struct{}
 
 type hookEventState struct {
@@ -210,6 +213,10 @@ func (p ExamplePlugin) Register(r *pluginsdk.Registrar) error {
 	}
 
 	if err := r.HTTP.Static(staticFiles, "static"); err != nil {
+		return err
+	}
+
+	if err := r.HTTP.Static(frontendFiles, "frontend_embed/assets"); err != nil {
 		return err
 	}
 
