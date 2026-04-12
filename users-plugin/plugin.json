@@ -12,6 +12,7 @@
     "api.routes",
     "hooks",
     "frontend.pages",
-    "auth.driver"
+    "auth.driver",
+    "settings"
   ]
 }

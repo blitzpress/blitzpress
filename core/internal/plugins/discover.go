@@ -30,6 +30,43 @@ type PluginManifestFile struct {
 	Capabilities  []string `json:"capabilities,omitempty"`
 }
 
+func (m *PluginManifestFile) UnmarshalJSON(data []byte) error {
+	type rawPluginManifestFile struct {
+		SchemaVersion int      `json:"schema_version"`
+		ID            *string  `json:"id"`
+		Name          *string  `json:"name"`
+		Version       *string  `json:"version"`
+		Description   *string  `json:"description,omitempty"`
+		Author        *string  `json:"author,omitempty"`
+		SDKVersion    *string  `json:"sdk_version"`
+		HasFrontend   bool     `json:"has_frontend"`
+		FrontendEntry *string  `json:"frontend_entry,omitempty"`
+		FrontendStyle *string  `json:"frontend_style,omitempty"`
+		Capabilities  []string `json:"capabilities,omitempty"`
+	}
+
+	var raw rawPluginManifestFile
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	*m = PluginManifestFile{
+		SchemaVersion: raw.SchemaVersion,
+		ID:            stringOrEmpty(raw.ID),
+		Name:          stringOrEmpty(raw.Name),
+		Version:       stringOrEmpty(raw.Version),
+		Description:   stringOrEmpty(raw.Description),
+		Author:        stringOrEmpty(raw.Author),
+		SDKVersion:    stringOrEmpty(raw.SDKVersion),
+		HasFrontend:   raw.HasFrontend,
+		FrontendEntry: stringOrEmpty(raw.FrontendEntry),
+		FrontendStyle: stringOrEmpty(raw.FrontendStyle),
+		Capabilities:  append([]string(nil), raw.Capabilities...),
+	}
+
+	return nil
+}
+
 type DiscoveredPlugin struct {
 	ManifestFile PluginManifestFile
 	Dir          string
@@ -146,9 +183,13 @@ func validateManifest(manifest PluginManifestFile) error {
 	if manifest.HasFrontend && strings.TrimSpace(manifest.FrontendEntry) == "" {
 		validationErrors = append(validationErrors, fmt.Errorf("frontend_entry is required when has_frontend is true"))
 	}
-	if manifest.HasFrontend && strings.TrimSpace(manifest.FrontendStyle) == "" {
-		validationErrors = append(validationErrors, fmt.Errorf("frontend_style is required when has_frontend is true"))
+	return errors.Join(validationErrors...)
+}
+
+func stringOrEmpty(value *string) string {
+	if value == nil {
+		return ""
 	}
 
-	return errors.Join(validationErrors...)
+	return *value
 }

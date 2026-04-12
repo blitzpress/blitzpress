@@ -41,10 +41,6 @@ function validateFrontendDescriptor(descriptor: PluginFrontendDescriptor): strin
     return "plugin manifest is missing frontend_entry";
   }
 
-  if (!descriptor.frontend_style) {
-    return "plugin manifest is missing frontend_style";
-  }
-
   return null;
 }
 
@@ -87,9 +83,7 @@ export async function loadPlugins(options: PluginLoaderOptions = {}): Promise<Pl
     }
 
     const frontendEntry = descriptor.frontend_entry!;
-    const frontendStyle = descriptor.frontend_style!;
-
-    ensureStylesheet(documentRef, frontendStyle);
+    ensureStylesheet(documentRef, descriptor.frontend_style);
 
     try {
       await importer(frontendEntry);

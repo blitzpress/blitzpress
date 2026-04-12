@@ -227,44 +227,19 @@ func TestDiscoverRejectsPluginsWithoutSharedObject(t *testing.T) {
 	assertSingleErrorContains(t, errs, PluginSOFilename())
 }
 
-func TestDiscoverRequiresFrontendFieldsWhenFrontendIsEnabled(t *testing.T) {
+func TestDiscoverRequiresFrontendEntryWhenFrontendIsEnabled(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name          string
-		frontendEntry string
-		frontendStyle string
-		wantSubstring string
-	}{
-		{
-			name:          "missing entry",
-			frontendStyle: "frontend/assets/index.css",
-			wantSubstring: "frontend_entry is required",
-		},
-		{
-			name:          "missing style",
-			frontendEntry: "frontend/assets/index.js",
-			wantSubstring: "frontend_style is required",
-		},
+	pluginsDir := t.TempDir()
+	writePlugin(t, pluginsDir, "frontend-plugin", validManifestJSON("frontend-plugin", "1.2.3", "0.1.0", 1, true, "", "frontend/assets/index.css"), true, true)
+
+	discovered, errs := Discover(pluginsDir)
+
+	if len(discovered) != 0 {
+		t.Fatalf("expected no discovered plugins, got %d", len(discovered))
 	}
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			pluginsDir := t.TempDir()
-			writePlugin(t, pluginsDir, "frontend-plugin", validManifestJSON("frontend-plugin", "1.2.3", "0.1.0", 1, true, tt.frontendEntry, tt.frontendStyle), true, true)
-
-			discovered, errs := Discover(pluginsDir)
-
-			if len(discovered) != 0 {
-				t.Fatalf("expected no discovered plugins, got %d", len(discovered))
-			}
-
-			assertSingleErrorContains(t, errs, tt.wantSubstring)
-		})
-	}
+	assertSingleErrorContains(t, errs, "frontend_entry is required")
 }
 
 func TestDiscoverAcceptsFrontendPluginWithEntryAndStyle(t *testing.T) {
@@ -281,6 +256,65 @@ func TestDiscoverAcceptsFrontendPluginWithEntryAndStyle(t *testing.T) {
 
 	if len(discovered) != 1 {
 		t.Fatalf("expected 1 discovered plugin, got %d", len(discovered))
+	}
+}
+
+func TestDiscoverAcceptsFrontendPluginWithoutStyle(t *testing.T) {
+	t.Parallel()
+
+	pluginsDir := t.TempDir()
+	writePlugin(t, pluginsDir, "frontend-plugin", `{
+  "schema_version": 1,
+  "id": "frontend-plugin",
+  "name": "Example Plugin",
+  "version": "1.2.3",
+  "sdk_version": "0.1.0",
+  "has_frontend": true,
+  "frontend_entry": "frontend/assets/index.js"
+}`, true, true)
+
+	discovered, errs := Discover(pluginsDir)
+
+	if len(errs) != 0 {
+		t.Fatalf("expected no discovery errors, got %v", errs)
+	}
+
+	if len(discovered) != 1 {
+		t.Fatalf("expected 1 discovered plugin, got %d", len(discovered))
+	}
+
+	if discovered[0].ManifestFile.FrontendStyle != "" {
+		t.Fatalf("expected empty frontend style, got %q", discovered[0].ManifestFile.FrontendStyle)
+	}
+}
+
+func TestDiscoverAcceptsFrontendPluginWithNullStyle(t *testing.T) {
+	t.Parallel()
+
+	pluginsDir := t.TempDir()
+	writePlugin(t, pluginsDir, "frontend-plugin", `{
+  "schema_version": 1,
+  "id": "frontend-plugin",
+  "name": "Example Plugin",
+  "version": "1.2.3",
+  "sdk_version": "0.1.0",
+  "has_frontend": true,
+  "frontend_entry": "frontend/assets/index.js",
+  "frontend_style": null
+}`, true, true)
+
+	discovered, errs := Discover(pluginsDir)
+
+	if len(errs) != 0 {
+		t.Fatalf("expected no discovery errors, got %v", errs)
+	}
+
+	if len(discovered) != 1 {
+		t.Fatalf("expected 1 discovered plugin, got %d", len(discovered))
+	}
+
+	if discovered[0].ManifestFile.FrontendStyle != "" {
+		t.Fatalf("expected empty frontend style, got %q", discovered[0].ManifestFile.FrontendStyle)
 	}
 }
 
