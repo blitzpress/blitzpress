@@ -261,10 +261,7 @@ func (h *spaHandler) Handle(c *fiber.Ctx) error {
 		return fiber.ErrNotFound
 	}
 
-	switch {
-	case strings.HasPrefix(c.Path(), "/api/"):
-		return fiber.ErrNotFound
-	case strings.HasPrefix(c.Path(), "/plugins/"):
+	if strings.HasPrefix(c.Path(), "/api/") {
 		return fiber.ErrNotFound
 	}
 
