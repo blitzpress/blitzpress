@@ -8,8 +8,8 @@ type Logger interface {
 }
 
 type MenuItem struct {
-	ID    string
-	Label string
-	Icon  string
-	Path  string
+	ID    string `json:"id"`
+	Label string `json:"label"`
+	Icon  string `json:"icon,omitempty"`
+	Path  string `json:"path"`
 }

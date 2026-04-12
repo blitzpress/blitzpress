@@ -12,7 +12,7 @@ BlitzPress is a Go workspace monorepo. `core/` contains the CMS server plus the 
 - Hot reload: `air -c .air.toml` for core, `air -c example-plugin/.air.toml` for the sample plugin.
 
 ## Coding Style & Naming Conventions
-Use `gofmt` for Go code; keep imports grouped and error wrapping explicit with `%w`. Go types use PascalCase, internal helpers use camelCase. TypeScript runs in strict mode; follow the existing 2-space indentation and keep component files in PascalCase with tests named `*.test.ts` or `*.test.tsx`. Plugin IDs, manifest IDs, and route namespaces must stay lowercase kebab-case.
+Use `gofmt` for Go code; keep imports grouped and error wrapping explicit with `%w`. **CRITICAL: Every exported Go struct field MUST have a `json:"snake_case"` tag.** Omit empty values with `json:",omitempty"` where appropriate. Missing json tags cause PascalCase keys in API responses, which breaks frontend consumers expecting snake_case. Go types use PascalCase, internal helpers use camelCase. TypeScript runs in strict mode; follow the existing 2-space indentation and keep component files in PascalCase with tests named `*.test.ts` or `*.test.tsx`. Plugin IDs, manifest IDs, and route namespaces must stay lowercase kebab-case. **API Route Naming:** All core API routes use the prefix `/api/core/`. Per-plugin custom routes remain under `/api/plugins/:id/`. Never use `/api/cms/` or `/api/admin/` prefixes.
 
 ## Testing Guidelines
 Keep Go tests alongside code as `*_test.go`. Frontend/runtime tests live beside sources as `*.test.ts(x)`. Before opening a PR, run the relevant Go, Bun, and typecheck commands for every touched module, plus the matching build script when you change plugin loading, frontend bundling, or embedded assets.

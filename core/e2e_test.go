@@ -50,7 +50,7 @@ func TestBuildAllAndRunCoreBinaryWithExamplePlugin(t *testing.T) {
 		stopCoreE2EProcess(t, cmd, &logs)
 	})
 
-	waitForCoreE2EReady(t, baseURL+"/api/cms/plugins", &logs)
+	waitForCoreE2EReady(t, baseURL+"/api/core/plugins", &logs)
 
 	var pluginList struct {
 		Plugins []struct {
@@ -62,7 +62,7 @@ func TestBuildAllAndRunCoreBinaryWithExamplePlugin(t *testing.T) {
 			FrontendStyle string `json:"frontend_style"`
 		} `json:"plugins"`
 	}
-	coreE2EGetJSON(t, baseURL+"/api/cms/plugins", &pluginList)
+	coreE2EGetJSON(t, baseURL+"/api/core/plugins", &pluginList)
 
 	if len(pluginList.Plugins) != 1 {
 		t.Fatalf("expected 1 loaded plugin, got %#v", pluginList.Plugins)
@@ -86,11 +86,11 @@ func TestBuildAllAndRunCoreBinaryWithExamplePlugin(t *testing.T) {
 	if !strings.Contains(indexHTML, `<script type="importmap">`) {
 		t.Fatalf("expected import map injection in root HTML, got %q", indexHTML)
 	}
-	if !strings.Contains(indexHTML, "/api/cms/modules/plugin-sdk.js") {
+	if !strings.Contains(indexHTML, "/api/core/modules/plugin-sdk.js") {
 		t.Fatalf("expected plugin-sdk module in import map, got %q", indexHTML)
 	}
 
-	moduleJS := coreE2EGetText(t, baseURL+"/api/cms/modules/plugin-sdk.js")
+	moduleJS := coreE2EGetText(t, baseURL+"/api/core/modules/plugin-sdk.js")
 	if !strings.Contains(moduleJS, "registerPlugin") {
 		t.Fatalf("expected plugin-sdk module to expose registerPlugin, got %q", moduleJS)
 	}
@@ -188,7 +188,7 @@ func TestBuildAllAndRunCoreBinaryWithExamplePlugin(t *testing.T) {
 		} `json:"schema"`
 		Values map[string]any `json:"values"`
 	}
-	coreE2EGetJSON(t, baseURL+"/api/admin/plugins/example-plugin/settings", &settings)
+	coreE2EGetJSON(t, baseURL+"/api/core/plugins/example-plugin/settings", &settings)
 	if settings.Schema == nil || len(settings.Schema.Sections) != 1 || settings.Schema.Sections[0].ID != "general" {
 		t.Fatalf("expected example plugin settings schema, got %#v", settings.Schema)
 	}
@@ -197,7 +197,7 @@ func TestBuildAllAndRunCoreBinaryWithExamplePlugin(t *testing.T) {
 	}
 
 	updatePayload := `{"values":{"greeting":"Updated from e2e","enabled":false,"items_per_page":12,"mode":"verbose"}}`
-	coreE2EPutJSON(t, baseURL+"/api/admin/plugins/example-plugin/settings", updatePayload, &settings)
+	coreE2EPutJSON(t, baseURL+"/api/core/plugins/example-plugin/settings", updatePayload, &settings)
 	if settings.Values["greeting"] != "Updated from e2e" {
 		t.Fatalf("expected saved greeting in response, got %#v", settings.Values)
 	}

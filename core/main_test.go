@@ -45,7 +45,7 @@ func TestCoreApplicationStartupLoadsPluginsAndRoutes(t *testing.T) {
 		}
 	})
 
-	pluginsResp, err := app.app.Test(httptest.NewRequest(http.MethodGet, "/api/cms/plugins", nil))
+	pluginsResp, err := app.app.Test(httptest.NewRequest(http.MethodGet, "/api/core/plugins", nil))
 	if err != nil {
 		t.Fatalf("plugins app.Test() error = %v", err)
 	}
@@ -164,7 +164,7 @@ func TestCoreApplicationServesSPAAndInjectsImportMap(t *testing.T) {
 	if !strings.Contains(rootHTML, `<script type="importmap">`) {
 		t.Fatalf("expected import map to be injected, got %q", rootHTML)
 	}
-	if !strings.Contains(rootHTML, `"solid-js":"/api/cms/modules/solid-js.js"`) {
+	if !strings.Contains(rootHTML, `"solid-js":"/api/core/modules/solid-js.js"`) {
 		t.Fatalf("expected solid-js import map entry, got %q", rootHTML)
 	}
 	if !strings.Contains(rootHTML, `<script type="module" crossorigin src="/assets/index.js"></script>`) {
@@ -198,7 +198,7 @@ func TestCoreApplicationServesSPAAndInjectsImportMap(t *testing.T) {
 		t.Fatalf("expected compiled frontend asset response, got status=%d body=%q", assetResp.StatusCode, string(assetBody))
 	}
 
-	moduleResp, err := app.app.Test(httptest.NewRequest(http.MethodGet, "/api/cms/modules/plugin-sdk.js", nil))
+	moduleResp, err := app.app.Test(httptest.NewRequest(http.MethodGet, "/api/core/modules/plugin-sdk.js", nil))
 	if err != nil {
 		t.Fatalf("module app.Test() error = %v", err)
 	}

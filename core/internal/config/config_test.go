@@ -19,8 +19,8 @@ func TestLoadReturnsDefaults(t *testing.T) {
 		t.Fatalf("expected default dsn blitzpress.db, got %q", cfg.DBDSN)
 	}
 
-	if cfg.PluginsDir != "../build/plugins" {
-		t.Fatalf("expected default plugins dir ../build/plugins, got %q", cfg.PluginsDir)
+	if cfg.PluginsDir != "./build/plugins" {
+		t.Fatalf("expected default plugins dir ./build/plugins, got %q", cfg.PluginsDir)
 	}
 
 	if cfg.LogLevel != "info" {

@@ -47,7 +47,7 @@ function validateFrontendDescriptor(descriptor: PluginFrontendDescriptor): strin
 }
 
 async function fetchPluginDescriptors(fetchImpl: PluginFetch): Promise<PluginFrontendDescriptor[]> {
-  const response = await fetchImpl("/api/cms/plugins");
+  const response = await fetchImpl("/api/core/plugins");
   if (!response.ok) {
     throw new Error(`failed to load plugin manifest: ${response.status} ${response.statusText}`);
   }

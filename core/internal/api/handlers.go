@@ -35,6 +35,22 @@ type pluginListItem struct {
 	FrontendStyle string `json:"frontend_style,omitempty"`
 }
 
+type adminPluginListResponse struct {
+	Plugins []adminPluginListItem `json:"plugins"`
+}
+
+type adminPluginListItem struct {
+	ID          string   `json:"id"`
+	Name        string   `json:"name"`
+	Version     string   `json:"version"`
+	Description string   `json:"description,omitempty"`
+	Author      string   `json:"author,omitempty"`
+	Status      string   `json:"status"`
+	Enabled     bool     `json:"enabled"`
+	HasFrontend bool     `json:"has_frontend"`
+	Errors      []string `json:"errors,omitempty"`
+}
+
 type pluginSettingsResponse struct {
 	Schema *pluginsdk.SettingsSchema `json:"schema"`
 	Values map[string]any            `json:"values"`
@@ -63,6 +79,101 @@ func CMSPluginsHandler(registry *plugins.PluginRegistry) fiber.Handler {
 		}
 
 		return c.JSON(pluginListResponse{Plugins: items})
+	}
+}
+
+func AdminPluginsHandler(registry *plugins.PluginRegistry) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		items := make([]adminPluginListItem, 0)
+		for _, plugin := range registry.ListPlugins() {
+			id := plugin.Manifest.ID
+			if id == "" {
+				id = plugin.ManifestFile.ID
+			}
+			name := plugin.Manifest.Name
+			if name == "" {
+				name = plugin.ManifestFile.Name
+			}
+			version := plugin.Manifest.Version
+			if version == "" {
+				version = plugin.ManifestFile.Version
+			}
+
+			item := adminPluginListItem{
+				ID:          id,
+				Name:        name,
+				Version:     version,
+				Description: plugin.ManifestFile.Description,
+				Author:      plugin.ManifestFile.Author,
+				Status:      plugin.Status,
+				Enabled:     plugin.Enabled,
+				HasFrontend: plugin.ManifestFile.HasFrontend,
+			}
+
+			for _, err := range plugin.Errors {
+				item.Errors = append(item.Errors, err.Error())
+			}
+
+			items = append(items, item)
+		}
+
+		return c.JSON(adminPluginListResponse{Plugins: items})
+	}
+}
+
+func AdminPluginToggleHandler(registry *plugins.PluginRegistry, db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		pluginID := c.Params("id")
+
+		plugin, ok := registry.GetPlugin(pluginID)
+		if !ok {
+			return fiber.NewError(fiber.StatusNotFound, "plugin not found")
+		}
+
+		var body struct {
+			Enabled bool `json:"enabled"`
+		}
+		if err := c.BodyParser(&body); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+		}
+
+		if err := registry.SetPluginEnabled(pluginID, body.Enabled); err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		plugin, _ = registry.GetPlugin(pluginID)
+		id := plugin.Manifest.ID
+		if id == "" {
+			id = plugin.ManifestFile.ID
+		}
+		name := plugin.Manifest.Name
+		if name == "" {
+			name = plugin.ManifestFile.Name
+		}
+		version := plugin.Manifest.Version
+		if version == "" {
+			version = plugin.ManifestFile.Version
+		}
+
+		item := adminPluginListItem{
+			ID:          id,
+			Name:        name,
+			Version:     version,
+			Description: plugin.ManifestFile.Description,
+			Author:      plugin.ManifestFile.Author,
+			Status:      plugin.Status,
+			Enabled:     plugin.Enabled,
+			HasFrontend: plugin.ManifestFile.HasFrontend,
+		}
+		for _, err := range plugin.Errors {
+			item.Errors = append(item.Errors, err.Error())
+		}
+
+		restartRequired := body.Enabled && plugin.Status == "disabled"
+		return c.JSON(fiber.Map{
+			"plugin":           item,
+			"restart_required": restartRequired,
+		})
 	}
 }
 

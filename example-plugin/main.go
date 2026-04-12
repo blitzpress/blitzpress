@@ -30,9 +30,9 @@ var staticFiles embed.FS
 type ExamplePlugin struct{}
 
 type hookEventState struct {
-	mu               sync.Mutex
-	coreReadyFired   bool
-	receivedEvents   []receivedEvent
+	mu             sync.Mutex
+	coreReadyFired bool
+	receivedEvents []receivedEvent
 }
 
 type receivedEvent struct {

@@ -19,7 +19,7 @@ type SettingsSaveResponse = {
 };
 
 function buildSettingsEndpoint(pluginId: string): string {
-  return `/api/admin/plugins/${encodeURIComponent(pluginId)}/settings`;
+  return `/api/core/plugins/${encodeURIComponent(pluginId)}/settings`;
 }
 
 async function parseJSON<TValue>(response: Response): Promise<TValue | undefined> {

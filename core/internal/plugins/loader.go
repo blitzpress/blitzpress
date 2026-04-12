@@ -13,6 +13,7 @@ type LoadedPlugin struct {
 	Path           string
 	Instance       pluginsdk.Plugin
 	Status         string
+	Enabled        bool
 	Errors         []error
 	Routes         []registeredRoute
 	Statics        []registeredStatic
@@ -67,6 +68,7 @@ func LoadPlugin(dp DiscoveredPlugin) (*LoadedPlugin, error) {
 	}
 
 	loaded.Status = "loaded"
+	loaded.Enabled = true
 	return loaded, nil
 }
 
@@ -80,6 +82,7 @@ func disabledLoadedPlugin(dp DiscoveredPlugin) *LoadedPlugin {
 		ManifestFile: dp.ManifestFile,
 		Path:         dp.Dir,
 		Status:       "disabled",
+		Enabled:      false,
 	}
 }
 

@@ -40,10 +40,10 @@ type browserImportMap struct {
 
 var defaultImportMap = browserImportMap{
 	Imports: map[string]string{
-		"solid-js":               "/api/cms/modules/solid-js.js",
-		"solid-js/web":           "/api/cms/modules/solid-js-web.js",
-		"solid-js/store":         "/api/cms/modules/solid-js-store.js",
-		"@blitzpress/plugin-sdk": "/api/cms/modules/plugin-sdk.js",
+		"solid-js":               "/api/core/modules/solid-js.js",
+		"solid-js/web":           "/api/core/modules/solid-js-web.js",
+		"solid-js/store":         "/api/core/modules/solid-js-store.js",
+		"@blitzpress/plugin-sdk": "/api/core/modules/plugin-sdk.js",
 	},
 }
 
@@ -143,10 +143,12 @@ func newCoreApplication(cfg *config.AppConfig, logger *slog.Logger) (*coreApplic
 
 	apiRouter := app.Group("/api")
 	registry.MountRoutes(apiRouter, app)
-	apiRouter.Get("/cms/plugins", api.CMSPluginsHandler(registry))
-	apiRouter.Get("/cms/modules/*", api.CMSModulesHandler(moduleAssets))
-	apiRouter.Get("/admin/plugins/:id/settings", api.PluginSettingsGetHandler(registry, db))
-	apiRouter.Put("/admin/plugins/:id/settings", api.PluginSettingsPutHandler(registry, db))
+	apiRouter.Get("/core/plugins", api.CMSPluginsHandler(registry))
+	apiRouter.Get("/core/modules/*", api.CMSModulesHandler(moduleAssets))
+	apiRouter.Get("/core/plugins/all", api.AdminPluginsHandler(registry))
+	apiRouter.Put("/core/plugins/:id/enabled", api.AdminPluginToggleHandler(registry, db))
+	apiRouter.Get("/core/plugins/:id/settings", api.PluginSettingsGetHandler(registry, db))
+	apiRouter.Put("/core/plugins/:id/settings", api.PluginSettingsPutHandler(registry, db))
 
 	app.Use(newSPAHandler(staticAssets).Handle)
 

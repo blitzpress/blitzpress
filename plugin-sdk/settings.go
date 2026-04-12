@@ -1,31 +1,31 @@
 package pluginsdk
 
 type SettingsSchema struct {
-	Sections []SettingsSection
+	Sections []SettingsSection `json:"sections"`
 }
 
 type SettingsSection struct {
-	ID     string
-	Title  string
-	Fields []SettingsField
+	ID     string          `json:"id"`
+	Title  string          `json:"title"`
+	Fields []SettingsField `json:"fields"`
 }
 
 type SettingsField struct {
-	ID          string
-	Type        string
-	Label       string
-	Description string
-	Default     any
-	Required    bool
-	Min         *float64
-	Max         *float64
-	Options     []SelectOption
-	Component   string
+	ID          string         `json:"id"`
+	Type        string         `json:"type"`
+	Label       string         `json:"label"`
+	Description string         `json:"description,omitempty"`
+	Default     any            `json:"default,omitempty"`
+	Required    bool           `json:"required"`
+	Min         *float64       `json:"min,omitempty"`
+	Max         *float64       `json:"max,omitempty"`
+	Options     []SelectOption `json:"options,omitempty"`
+	Component   string         `json:"component,omitempty"`
 }
 
 type SelectOption struct {
-	Value string
-	Label string
+	Value string `json:"value"`
+	Label string `json:"label"`
 }
 
 type SettingsRegistry interface {

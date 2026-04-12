@@ -5,11 +5,11 @@ import "gorm.io/gorm"
 const SDKVersion = "0.1.0"
 
 type Manifest struct {
-	ID          string
-	Name        string
-	Version     string
-	Description string
-	Author      string
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Version     string `json:"version"`
+	Description string `json:"description,omitempty"`
+	Author      string `json:"author,omitempty"`
 }
 
 type Plugin interface {

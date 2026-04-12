@@ -3,13 +3,13 @@ package pluginsdk
 type HookID string
 
 type HookOptions struct {
-	Priority int
+	Priority int `json:"priority"`
 }
 
 type HookContext struct {
-	PluginID  string
-	RequestID string
-	Metadata  map[string]any
+	PluginID  string         `json:"plugin_id"`
+	RequestID string         `json:"request_id,omitempty"`
+	Metadata  map[string]any `json:"metadata,omitempty"`
 }
 
 type ActionFunc func(ctx *HookContext, args ...any) error

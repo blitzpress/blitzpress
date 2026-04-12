@@ -158,6 +158,46 @@ func (r *PluginRegistry) pluginEnabled(pluginID string) (bool, error) {
 	}
 }
 
+func (r *PluginRegistry) SetPluginEnabled(pluginID string, enabled bool) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	plugin, ok := r.plugins[pluginID]
+	if !ok {
+		return fmt.Errorf("plugin %q not found", pluginID)
+	}
+
+	if r.db != nil {
+		var existing database.PluginState
+		result := r.db.Where("plugin_id = ?", pluginID).Limit(1).Find(&existing)
+		if result.Error != nil {
+			return fmt.Errorf("lookup plugin state for %q: %w", pluginID, result.Error)
+		}
+
+		if result.RowsAffected == 0 {
+			existing = database.PluginState{
+				PluginID: pluginID,
+				Enabled:  enabled,
+				Version:  plugin.ManifestFile.Version,
+			}
+			if err := r.db.Create(&existing).Error; err != nil {
+				return fmt.Errorf("create plugin state for %q: %w", pluginID, err)
+			}
+		}
+
+		if err := r.db.Model(&existing).Where("plugin_id = ?", pluginID).Update("enabled", enabled).Error; err != nil {
+			return fmt.Errorf("update plugin state for %q: %w", pluginID, err)
+		}
+	}
+
+	plugin.Enabled = enabled
+	if !enabled {
+		plugin.Status = "disabled"
+	}
+
+	return nil
+}
+
 func (r *PluginRegistry) GetPlugin(id string) (*LoadedPlugin, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

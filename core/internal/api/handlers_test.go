@@ -36,9 +36,9 @@ func TestCMSPluginsHandlerReturnsLoadedPlugins(t *testing.T) {
 	}, nil)
 
 	app := fiber.New()
-	app.Get("/api/cms/plugins", CMSPluginsHandler(registry))
+	app.Get("/api/core/plugins", CMSPluginsHandler(registry))
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/cms/plugins", nil))
+	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/core/plugins", nil))
 	if err != nil {
 		t.Fatalf("app.Test() error = %v", err)
 	}
@@ -99,9 +99,9 @@ func TestCMSPluginsHandlerSkipsDisabledPlugins(t *testing.T) {
 	}, db)
 
 	app := fiber.New()
-	app.Get("/api/cms/plugins", CMSPluginsHandler(registry))
+	app.Get("/api/core/plugins", CMSPluginsHandler(registry))
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/cms/plugins", nil))
+	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/core/plugins", nil))
 	if err != nil {
 		t.Fatalf("app.Test() error = %v", err)
 	}
@@ -121,6 +121,120 @@ func TestCMSPluginsHandlerSkipsDisabledPlugins(t *testing.T) {
 
 	if payload.Plugins[0].ID != "enabled-plugin" {
 		t.Fatalf("expected only enabled plugin in payload, got %#v", payload.Plugins)
+	}
+}
+
+func TestAdminPluginsHandlerReturnsAllPlugins(t *testing.T) {
+	t.Parallel()
+
+	db := newAPITestDB(t, "api_admin_all_plugins")
+	if err := db.Model(&database.PluginState{}).Create(map[string]any{
+		"plugin_id": "disabled-plugin",
+		"enabled":   false,
+		"version":   "1.0.0",
+	}).Error; err != nil {
+		t.Fatalf("Create(disabled plugin state) error = %v", err)
+	}
+
+	registry := buildAPITestRegistry(t, []apiPluginFixture{
+		{
+			id:      "loaded-plugin",
+			name:    "Loaded Plugin",
+			version: "1.0.0",
+			source:  settingsPluginSource("loaded-plugin", "Loaded Plugin", "1.0.0"),
+		},
+		{
+			id:      "disabled-plugin",
+			name:    "Disabled Plugin",
+			version: "1.0.0",
+			source:  settingsPluginSource("disabled-plugin", "Disabled Plugin", "1.0.0"),
+		},
+	}, db)
+
+	app := fiber.New()
+	app.Get("/api/core/plugins/all", AdminPluginsHandler(registry))
+
+	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/core/plugins/all", nil))
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, resp.StatusCode)
+	}
+
+	var payload adminPluginListResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("decoding response failed: %v", err)
+	}
+
+	if len(payload.Plugins) != 2 {
+		t.Fatalf("expected 2 plugins (loaded + disabled), got %d", len(payload.Plugins))
+	}
+
+	statusMap := map[string]string{}
+	for _, p := range payload.Plugins {
+		statusMap[p.ID] = p.Status
+	}
+
+	if statusMap["loaded-plugin"] != "loaded" {
+		t.Fatalf("expected loaded-plugin status 'loaded', got %q", statusMap["loaded-plugin"])
+	}
+	if statusMap["disabled-plugin"] != "disabled" {
+		t.Fatalf("expected disabled-plugin status 'disabled', got %q", statusMap["disabled-plugin"])
+	}
+}
+
+func TestAdminPluginToggleHandler(t *testing.T) {
+	t.Parallel()
+
+	db := newAPITestDB(t, "api_admin_toggle")
+	registry := buildAPITestRegistry(t, []apiPluginFixture{
+		{
+			id:      "toggle-plugin",
+			name:    "Toggle Plugin",
+			version: "1.0.0",
+			source:  settingsPluginSource("toggle-plugin", "Toggle Plugin", "1.0.0"),
+		},
+	}, db)
+
+	app := fiber.New()
+	app.Put("/api/core/plugins/:id/enabled", AdminPluginToggleHandler(registry, db))
+
+	disableBody := `{"enabled": false}`
+	req := httptest.NewRequest(http.MethodPut, "/api/core/plugins/toggle-plugin/enabled", strings.NewReader(disableBody))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("expected status %d, got %d: %s", http.StatusOK, resp.StatusCode, body)
+	}
+
+	var toggleResp struct {
+		Plugin          adminPluginListItem `json:"plugin"`
+		RestartRequired bool                `json:"restart_required"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&toggleResp); err != nil {
+		t.Fatalf("decoding toggle response failed: %v", err)
+	}
+
+	if toggleResp.Plugin.Status != "disabled" {
+		t.Fatalf("expected status 'disabled' after toggle, got %q", toggleResp.Plugin.Status)
+	}
+	if toggleResp.Plugin.Enabled {
+		t.Fatalf("expected enabled=false after disabling")
+	}
+
+	var state database.PluginState
+	if err := db.Where("plugin_id = ?", "toggle-plugin").First(&state).Error; err != nil {
+		t.Fatalf("reading plugin state from DB: %v", err)
+	}
+	if state.Enabled {
+		t.Fatalf("expected DB state enabled=false")
 	}
 }
 
@@ -144,10 +258,10 @@ func TestPluginSettingsHandlersGetPutAndValidate(t *testing.T) {
 	}, db)
 
 	app := fiber.New()
-	app.Get("/api/admin/plugins/:id/settings", PluginSettingsGetHandler(registry, db))
-	app.Put("/api/admin/plugins/:id/settings", PluginSettingsPutHandler(registry, db))
+	app.Get("/api/core/plugins/:id/settings", PluginSettingsGetHandler(registry, db))
+	app.Put("/api/core/plugins/:id/settings", PluginSettingsPutHandler(registry, db))
 
-	getResp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/admin/plugins/settings-plugin/settings", nil))
+	getResp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/core/plugins/settings-plugin/settings", nil))
 	if err != nil {
 		t.Fatalf("settings GET app.Test() error = %v", err)
 	}
@@ -166,7 +280,7 @@ func TestPluginSettingsHandlersGetPutAndValidate(t *testing.T) {
 	}
 
 	validBody := `{"values":{"site_name":"Updated Site","enabled":true,"count":3,"mode":"advanced"}}`
-	putResp, err := app.Test(httptest.NewRequest(http.MethodPut, "/api/admin/plugins/settings-plugin/settings", strings.NewReader(validBody)))
+	putResp, err := app.Test(httptest.NewRequest(http.MethodPut, "/api/core/plugins/settings-plugin/settings", strings.NewReader(validBody)))
 	if err != nil {
 		t.Fatalf("settings PUT app.Test() error = %v", err)
 	}
@@ -194,7 +308,7 @@ func TestPluginSettingsHandlersGetPutAndValidate(t *testing.T) {
 	}
 
 	invalidBody := `{"values":{"site_name":"Updated Site","enabled":true,"count":0,"mode":"invalid"}}`
-	invalidResp, err := app.Test(httptest.NewRequest(http.MethodPut, "/api/admin/plugins/settings-plugin/settings", strings.NewReader(invalidBody)))
+	invalidResp, err := app.Test(httptest.NewRequest(http.MethodPut, "/api/core/plugins/settings-plugin/settings", strings.NewReader(invalidBody)))
 	if err != nil {
 		t.Fatalf("invalid settings PUT app.Test() error = %v", err)
 	}
@@ -209,11 +323,11 @@ func TestCMSModulesHandlerServesFiles(t *testing.T) {
 	t.Parallel()
 
 	app := fiber.New()
-	app.Get("/api/cms/modules/*", CMSModulesHandler(fstest.MapFS{
+	app.Get("/api/core/modules/*", CMSModulesHandler(fstest.MapFS{
 		"solid-js.js": &fstest.MapFile{Data: []byte("export const x = 1;")},
 	}))
 
-	okResp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/cms/modules/solid-js.js", nil))
+	okResp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/core/modules/solid-js.js", nil))
 	if err != nil {
 		t.Fatalf("modules app.Test() error = %v", err)
 	}
@@ -227,7 +341,7 @@ func TestCMSModulesHandlerServesFiles(t *testing.T) {
 		t.Fatalf("unexpected module response status=%d body=%q", okResp.StatusCode, string(body))
 	}
 
-	missingResp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/cms/modules/missing.js", nil))
+	missingResp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/core/modules/missing.js", nil))
 	if err != nil {
 		t.Fatalf("missing module app.Test() error = %v", err)
 	}
