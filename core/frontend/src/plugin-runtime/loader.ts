@@ -1,3 +1,4 @@
+import { http } from "../modules/http";
 import type {
   PluginFrontendDescriptor,
   PluginListResponse,
@@ -14,6 +15,7 @@ export interface PluginLoaderOptions {
 }
 
 const defaultImporter: ModuleImporter = (specifier) => import(/* @vite-ignore */ specifier);
+const defaultPluginFetch: PluginFetch = (input, init) => http().asJson().send(input, init);
 
 function ensureStylesheet(documentRef: Document, href?: string): void {
   if (!href) {
@@ -57,7 +59,7 @@ async function fetchPluginDescriptors(fetchImpl: PluginFetch): Promise<PluginFro
 }
 
 export async function loadPlugins(options: PluginLoaderOptions = {}): Promise<PluginLoadSummary> {
-  const fetchImpl = options.fetch ?? fetch;
+  const fetchImpl = options.fetch ?? defaultPluginFetch;
   const importer = options.importer ?? defaultImporter;
   const documentRef = options.document ?? document;
   const descriptors = await fetchPluginDescriptors(fetchImpl);

@@ -4,7 +4,7 @@ import {
   createMemo,
   createResource,
 } from "solid-js";
-import { hooks } from "@blitzpress/plugin-sdk";
+import { hooks, http } from "@blitzpress/plugin-sdk";
 
 type ExamplePluginStatus = {
   id: string;
@@ -41,7 +41,7 @@ const defaultMenuItems: AdminMenuItem[] = [
 ];
 
 async function fetchStatus(): Promise<ExamplePluginStatus> {
-  const response = await fetch("/api/plugins/example-plugin/status");
+  const response = await http().asJson().get("/api/plugins/example-plugin/status");
   if (!response.ok) {
     throw new Error(`Failed to load example plugin status: ${response.status} ${response.statusText}`);
   }

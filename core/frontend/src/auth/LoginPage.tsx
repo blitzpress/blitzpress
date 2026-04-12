@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { http } from "@blitzpress/plugin-sdk";
 
 const tokenStorageKey = "bp_auth_token";
 
@@ -14,10 +15,9 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/core/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email(), password: password() }),
+      const res = await http().asJson().post("/api/core/auth/login", {
+        email: email(),
+        password: password(),
       });
 
       if (!res.ok) {

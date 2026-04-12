@@ -1,3 +1,5 @@
+import { http } from "@blitzpress/plugin-sdk";
+
 export interface AdminPlugin {
   id: string;
   name: string;
@@ -20,7 +22,7 @@ interface ToggleResponse {
 }
 
 export async function fetchAdminPlugins(): Promise<AdminPlugin[]> {
-  const response = await fetch("/api/core/plugins/all");
+  const response = await http().asJson().get("/api/core/plugins/all");
   if (!response.ok) {
     throw new Error(`Failed to load plugins: ${response.status} ${response.statusText}`);
   }
@@ -29,11 +31,7 @@ export async function fetchAdminPlugins(): Promise<AdminPlugin[]> {
 }
 
 export async function togglePluginEnabled(id: string, enabled: boolean): Promise<ToggleResponse> {
-  const response = await fetch(`/api/core/plugins/${encodeURIComponent(id)}/enabled`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ enabled }),
-  });
+  const response = await http().asJson().put(`/api/core/plugins/${encodeURIComponent(id)}/enabled`, { enabled });
   if (!response.ok) {
     throw new Error(`Failed to toggle plugin: ${response.status} ${response.statusText}`);
   }

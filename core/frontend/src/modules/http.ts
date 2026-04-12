@@ -1,3 +1,5 @@
+import { hooks } from "../plugin-runtime/hooks";
+
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 type HttpRequestBody = BodyInit | JsonValue | Record<string, unknown> | unknown[] | null | undefined;
 
@@ -70,6 +72,11 @@ export class HttpClient {
     return this.clone({ headers, json: true });
   }
 
+  send(url: string, init: RequestInit = {}): Promise<Response> {
+    const { body, method = "GET", ...rest } = init;
+    return this.request(method, url, body as HttpRequestBody, rest);
+  }
+
   get(url: string, init: RequestInit = {}): Promise<Response> {
     return this.request("GET", url, undefined, init);
   }
@@ -92,6 +99,12 @@ export class HttpClient {
 
   private request(method: string, url: string, body?: HttpRequestBody, init: RequestInit = {}): Promise<Response> {
     const headers = cloneHeaders(this.headers);
+    if (init.headers) {
+      for (const [key, value] of new Headers(init.headers).entries()) {
+        headers.set(key, value);
+      }
+    }
+
     const requestInit: RequestInit = {
       ...init,
       method,
@@ -115,6 +128,16 @@ export class HttpClient {
         requestInit.body = JSON.stringify(body);
       }
     }
+
+    const self = this.clone({ headers });
+    const nextSelf = hooks.applyFilters<HttpClient>(
+      "core/http:requestAfterProcess",
+      self,
+      url,
+      requestInit,
+    );
+
+    requestInit.headers = cloneHeaders(nextSelf.headers);
 
     return fetch(url, requestInit);
   }

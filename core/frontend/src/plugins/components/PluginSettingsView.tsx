@@ -1,4 +1,5 @@
 import { Show, createMemo, createResource } from "solid-js";
+import { http } from "@blitzpress/plugin-sdk";
 
 import type { PluginSettingsResponse, SettingsValues } from "../../plugin-runtime/types";
 import SettingsForm from "./SettingsForm";
@@ -46,9 +47,11 @@ function formatSettingsRequestError(
   return fieldErrors.length > 0 ? `${baseMessage} (${fieldErrors.join(", ")})` : baseMessage;
 }
 
+const defaultSettingsFetch: SettingsFetch = (input, init) => http().asJson().send(input, init);
+
 export async function fetchPluginSettings(
   pluginId: string,
-  fetchImpl: SettingsFetch = fetch,
+  fetchImpl: SettingsFetch = defaultSettingsFetch,
 ): Promise<PluginSettingsResponse> {
   const response = await fetchImpl(buildSettingsEndpoint(pluginId));
   const payload = await parseJSON<PluginSettingsResponse & SettingsSaveResponse>(response);
@@ -66,7 +69,7 @@ export async function fetchPluginSettings(
 export async function savePluginSettings(
   pluginId: string,
   values: SettingsValues,
-  fetchImpl: SettingsFetch = fetch,
+  fetchImpl: SettingsFetch = defaultSettingsFetch,
 ): Promise<SettingsValues> {
   const response = await fetchImpl(buildSettingsEndpoint(pluginId), {
     method: "PUT",
@@ -90,7 +93,7 @@ function formatUnknownError(error: unknown): string {
 
 export default function PluginSettingsView(props: PluginSettingsViewProps) {
   const pluginLabel = createMemo(() => props.pluginName?.trim() || props.pluginId);
-  const fetchImpl = () => props.fetch ?? fetch;
+  const fetchImpl = () => props.fetch ?? defaultSettingsFetch;
   const [settings, { mutate, refetch }] = createResource(
     () => props.pluginId,
     (pluginId) => fetchPluginSettings(pluginId, fetchImpl()),
