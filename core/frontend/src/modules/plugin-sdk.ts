@@ -1,6 +1,8 @@
 export { events, createEventBus } from "../plugin-runtime/events";
 export { hooks, createHookEngine } from "../plugin-runtime/hooks";
 export { http, HttpClient } from "./http";
+export { DataTable } from "../plugin-runtime/components/DataTable";
+export { createColumnHelper } from "@tanstack/solid-table";
 export {
   createRegistrar,
   getRuntimeSnapshot,
@@ -8,6 +10,9 @@ export {
   resetRuntimeForTests,
   runtimeState,
 } from "../plugin-runtime/registry";
+export type {
+  DataTableProps,
+} from "../plugin-runtime/components/DataTable";
 export type {
   ComponentLoader,
   FieldComponent,
@@ -41,3 +46,4 @@ export type {
   SettingsValues,
   WidgetDefinition,
 } from "../plugin-runtime/types";
+export type { ColumnDef } from "@tanstack/solid-table";
