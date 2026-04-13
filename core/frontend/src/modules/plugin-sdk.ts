@@ -2,6 +2,7 @@ export { events, createEventBus } from "../plugin-runtime/events";
 export { hooks, createHookEngine } from "../plugin-runtime/hooks";
 export { http, HttpClient } from "./http";
 export { DataTable } from "../plugin-runtime/components/DataTable";
+export { PluginPageLayout } from "../plugin-runtime/components/PluginPageLayout";
 export { createColumnHelper } from "@tanstack/solid-table";
 export {
   createRegistrar,
@@ -13,6 +14,9 @@ export {
 export type {
   DataTableProps,
 } from "../plugin-runtime/components/DataTable";
+export type {
+  PluginPageLayoutProps,
+} from "../plugin-runtime/components/PluginPageLayout";
 export type {
   ComponentLoader,
   FieldComponent,
