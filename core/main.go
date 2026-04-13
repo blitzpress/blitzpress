@@ -138,6 +138,7 @@ func newCoreApplication(cfg *config.AppConfig, logger *slog.Logger) (*coreApplic
 
 	authRegistry := coreauth.NewRegistry()
 	registry := plugins.NewPluginRegistry(db, logger, authRegistry)
+	authRegistry.SetHooks(registry.Hooks())
 	if err := registry.DiscoverAndLoad(cfg.PluginsDir); err != nil {
 		if errors.Is(err, plugins.ErrCoreBootingHook) {
 			registry.EventBus().Stop()
@@ -161,12 +162,12 @@ func newCoreApplication(cfg *config.AppConfig, logger *slog.Logger) (*coreApplic
 
 	protectedAPI := apiRouter.Group("/core", authMW)
 	protectedAPI.Get("/plugins", api.CMSPluginsHandler(registry))
-	protectedAPI.Get("/plugins/all", api.AdminPluginsHandler(registry))
-	protectedAPI.Put("/plugins/:id/enabled", api.AdminPluginToggleHandler(registry, db, newManagedRestartRequester(logger)))
-	protectedAPI.Get("/plugins/:id/settings", api.PluginSettingsGetHandler(registry, db))
-	protectedAPI.Put("/plugins/:id/settings", api.PluginSettingsPutHandler(registry, db))
+	protectedAPI.Get("/plugins/all", coreauth.RequireCapability(authRegistry, "manage_plugins"), api.AdminPluginsHandler(registry))
+	protectedAPI.Put("/plugins/:id/enabled", coreauth.RequireCapability(authRegistry, "manage_plugins"), api.AdminPluginToggleHandler(registry, db, newManagedRestartRequester(logger)))
+	protectedAPI.Get("/plugins/:id/settings", coreauth.RequireCapability(authRegistry, "manage_options"), api.PluginSettingsGetHandler(registry, db))
+	protectedAPI.Put("/plugins/:id/settings", coreauth.RequireCapability(authRegistry, "manage_options"), api.PluginSettingsPutHandler(registry, db))
 
-	registry.MountRoutes(apiRouter, app)
+	registry.MountRoutes(apiRouter, app, authMW)
 
 	spaH := newSPAHandler(staticAssets)
 	spaH.authRegistry = authRegistry

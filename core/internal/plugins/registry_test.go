@@ -128,6 +128,57 @@ func TestPluginRegistryDiscoverLoadAndMountRoutes(t *testing.T) {
 	}
 }
 
+func TestPluginRegistryMountRoutesAppliesMiddleware(t *testing.T) {
+	t.Parallel()
+
+	registry := NewPluginRegistry(nil, nil, nil)
+	registry.storePlugin(&LoadedPlugin{
+		Manifest: pluginsdk.Manifest{
+			ID:      "example-plugin",
+			Name:    "Example Plugin",
+			Version: "1.0.0",
+		},
+		Status: "loaded",
+		Routes: []registeredRoute{
+			{
+				pluginID: "example-plugin",
+				register: func(router fiber.Router) {
+					router.Get("/status", func(c *fiber.Ctx) error {
+						return c.JSON(fiber.Map{"ok": true})
+					})
+				},
+			},
+		},
+	})
+
+	app := fiber.New()
+	api := app.Group("/api")
+	registry.MountRoutes(api, app, func(c *fiber.Ctx) error {
+		if c.Get("Authorization") == "" {
+			return c.SendStatus(fiber.StatusUnauthorized)
+		}
+		return c.Next()
+	})
+
+	unauthorizedResp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/plugins/example-plugin/status", nil))
+	if err != nil {
+		t.Fatalf("unauthorized app.Test() error = %v", err)
+	}
+	if unauthorizedResp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected unauthorized status %d, got %d", http.StatusUnauthorized, unauthorizedResp.StatusCode)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/plugins/example-plugin/status", nil)
+	req.Header.Set("Authorization", "Bearer token")
+	authorizedResp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("authorized app.Test() error = %v", err)
+	}
+	if authorizedResp.StatusCode != http.StatusOK {
+		t.Fatalf("expected authorized status %d, got %d", http.StatusOK, authorizedResp.StatusCode)
+	}
+}
+
 func TestPluginRegistryFiresLifecycleHooksInDiscoveryOrder(t *testing.T) {
 	t.Parallel()
 

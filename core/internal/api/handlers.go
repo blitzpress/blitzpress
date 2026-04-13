@@ -122,6 +122,10 @@ func AuthLoginHandler(authRegistry *coreauth.Registry) fiber.Handler {
 			MaxAge:   int((24 * time.Hour) / time.Second),
 		})
 
+		if err := authRegistry.NotifyUserAuthenticated(user); err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
 		return c.JSON(fiber.Map{
 			"token": token,
 			"user":  user,

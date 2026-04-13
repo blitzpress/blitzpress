@@ -39,6 +39,10 @@ func AdminAuthMiddleware(registry *Registry) fiber.Handler {
 		}
 
 		c.Locals(AuthUserKey, user)
+		if err := registry.NotifyUserAuthenticated(user); err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
 		return c.Next()
 	}
 }
@@ -55,7 +59,12 @@ func RequireCapability(registry *Registry, capability string) fiber.Handler {
 			return denyAccess(c, driver)
 		}
 
-		if !driver.HasCapability(user, capability) {
+		allowed, err := registry.CheckCapability(user, capability)
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		if !allowed {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 				"error": "insufficient permissions",
 			})

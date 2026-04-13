@@ -234,13 +234,13 @@ func (r *PluginRegistry) ListPlugins() []*LoadedPlugin {
 	return plugins
 }
 
-func (r *PluginRegistry) MountRoutes(api fiber.Router, root fiber.Router) {
+func (r *PluginRegistry) MountRoutes(api fiber.Router, root fiber.Router, middleware ...fiber.Handler) {
 	for _, plugin := range r.ListPlugins() {
 		if plugin.Status != "loaded" {
 			continue
 		}
 
-		pluginAPI := api.Group("/plugins/" + plugin.Manifest.ID)
+		pluginAPI := api.Group("/plugins/"+plugin.Manifest.ID, middleware...)
 		for _, route := range plugin.Routes {
 			if route.register != nil {
 				route.register(pluginAPI)
