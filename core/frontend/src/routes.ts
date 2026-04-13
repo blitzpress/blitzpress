@@ -23,7 +23,7 @@ export const routes: RouteDefinition[] = [
   { path: "/media", component: MediaLibraryPage },
   { path: "/pages", component: PagesManagerPage },
   { path: "/plugins", component: PluginsPage },
-  { path: "/users", component: UsersPage },
+  { path: "/users2", component: UsersPage },
   { path: "/settings", component: SettingsPage },
   { path: "/comments", component: PlaceholderPage },
   { path: "/appearance", component: PlaceholderPage },
