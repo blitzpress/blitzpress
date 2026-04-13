@@ -1,15 +1,22 @@
 package main
 
 import (
+	"regexp"
+	"sort"
+	"strings"
 	"time"
 
+	pluginsdk "github.com/BlitzPress/BlitzPress/plugin-sdk"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const sessionCookieName = "bp_session"
+
+var roleSlugPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
 type loginRequest struct {
 	Email    string `json:"email"`
@@ -39,15 +46,59 @@ type userResponse struct {
 	Roles       []string  `json:"roles"`
 }
 
+type saveRoleRequest struct {
+	Slug         string   `json:"slug"`
+	Label        string   `json:"label"`
+	Capabilities []string `json:"capabilities"`
+}
+
+type roleResponse struct {
+	Slug         string   `json:"slug"`
+	Label        string   `json:"label"`
+	Capabilities []string `json:"capabilities"`
+}
+
+type capabilityResponse struct {
+	Slug        string `json:"slug"`
+	Description string `json:"description,omitempty"`
+}
+
 func registerRoutes(router fiber.Router, driver *usersAuthDriver, db *gorm.DB, cache *roleCapCache) {
+	manageUsers := requireCapability(driver, "users.manage")
+
 	router.Post("/login", handleLogin(driver))
 	router.Post("/logout", handleLogout())
 	router.Get("/me", handleMe(driver))
-	router.Get("/users", handleListUsers(db))
-	router.Post("/users", handleCreateUser(db, cache))
-	router.Put("/users/:id", handleUpdateUser(db, cache))
-	router.Delete("/users/:id", handleDeleteUser(db))
-	router.Get("/roles", handleListRoles(cache))
+	router.Get("/users", manageUsers, handleListUsers(db))
+	router.Post("/users", manageUsers, handleCreateUser(db, cache))
+	router.Put("/users/:id", manageUsers, handleUpdateUser(db, cache))
+	router.Delete("/users/:id", manageUsers, handleDeleteUser(db))
+	router.Get("/roles", manageUsers, handleListRoles(db))
+	router.Get("/roles/:slug", manageUsers, handleGetRole(db))
+	router.Post("/roles", manageUsers, handleCreateRole(db, cache))
+	router.Put("/roles/:slug", manageUsers, handleUpdateRole(db, cache))
+	router.Get("/capabilities", manageUsers, handleListCapabilities(db))
+}
+
+func requireCapability(driver *usersAuthDriver, capability string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		user, _ := c.Locals(pluginsdk.AuthUserContextKey).(*pluginsdk.AuthUser)
+		if user == nil {
+			user = driver.GetLoggedInUser(c)
+		}
+		if user == nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "authentication required",
+			})
+		}
+		if !driver.HasCapability(user, capability) {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error": "insufficient permissions",
+			})
+		}
+
+		return c.Next()
+	}
 }
 
 func handleLogin(driver *usersAuthDriver) fiber.Handler {
@@ -289,8 +340,280 @@ func handleDeleteUser(db *gorm.DB) fiber.Handler {
 	}
 }
 
-func handleListRoles(cache *roleCapCache) fiber.Handler {
+func handleListRoles(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{"roles": cache.GetRoles()})
+		roles, err := loadRoleResponses(db)
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		return c.JSON(fiber.Map{"roles": roles})
 	}
+}
+
+func handleGetRole(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		role, err := loadRoleResponse(db, c.Params("slug"))
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return fiber.NewError(fiber.StatusNotFound, "role not found")
+			}
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		return c.JSON(fiber.Map{"role": role})
+	}
+}
+
+func handleCreateRole(db *gorm.DB, cache *roleCapCache) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		req, err := parseSaveRoleRequest(c)
+		if err != nil {
+			return err
+		}
+
+		if err := db.Transaction(func(tx *gorm.DB) error {
+			if err := validateRoleCapabilities(tx, req.Capabilities); err != nil {
+				return err
+			}
+
+			role := UsersPluginRole{
+				Slug:  req.Slug,
+				Label: req.Label,
+			}
+			if err := tx.Create(&role).Error; err != nil {
+				return fiber.NewError(fiber.StatusConflict, "role with this slug already exists")
+			}
+
+			return replaceRoleCapabilities(tx, role.Slug, req.Capabilities)
+		}); err != nil {
+			return err
+		}
+
+		if err := cache.Load(); err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		role, err := loadRoleResponse(db, req.Slug)
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		return c.Status(fiber.StatusCreated).JSON(fiber.Map{"role": role})
+	}
+}
+
+func handleUpdateRole(db *gorm.DB, cache *roleCapCache) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		originalSlug := c.Params("slug")
+		req, err := parseSaveRoleRequest(c)
+		if err != nil {
+			return err
+		}
+
+		if err := db.Transaction(func(tx *gorm.DB) error {
+			var role UsersPluginRole
+			if err := tx.First(&role, "slug = ?", originalSlug).Error; err != nil {
+				if err == gorm.ErrRecordNotFound {
+					return fiber.NewError(fiber.StatusNotFound, "role not found")
+				}
+				return err
+			}
+
+			if err := validateRoleCapabilities(tx, req.Capabilities); err != nil {
+				return err
+			}
+
+			if req.Slug != originalSlug {
+				var count int64
+				if err := tx.Model(&UsersPluginRole{}).Where("slug = ?", req.Slug).Count(&count).Error; err != nil {
+					return err
+				}
+				if count > 0 {
+					return fiber.NewError(fiber.StatusConflict, "role with this slug already exists")
+				}
+			}
+
+			if err := tx.Model(&role).Updates(map[string]any{
+				"slug":  req.Slug,
+				"label": req.Label,
+			}).Error; err != nil {
+				return err
+			}
+
+			if req.Slug != originalSlug {
+				if err := tx.Model(&UsersPluginRoleCapability{}).
+					Where("role_slug = ?", originalSlug).
+					Update("role_slug", req.Slug).Error; err != nil {
+					return err
+				}
+				if err := tx.Model(&UsersPluginUserRole{}).
+					Where("role_slug = ?", originalSlug).
+					Update("role_slug", req.Slug).Error; err != nil {
+					return err
+				}
+			}
+
+			return replaceRoleCapabilities(tx, req.Slug, req.Capabilities)
+		}); err != nil {
+			return err
+		}
+
+		if err := cache.Load(); err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		role, err := loadRoleResponse(db, req.Slug)
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		return c.JSON(fiber.Map{"role": role})
+	}
+}
+
+func handleListCapabilities(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var caps []UsersPluginCapability
+		if err := db.Order("slug ASC").Find(&caps).Error; err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		result := make([]capabilityResponse, 0, len(caps))
+		for _, cap := range caps {
+			result = append(result, capabilityResponse{
+				Slug:        cap.Slug,
+				Description: cap.Description,
+			})
+		}
+
+		return c.JSON(fiber.Map{"capabilities": result})
+	}
+}
+
+func parseSaveRoleRequest(c *fiber.Ctx) (saveRoleRequest, error) {
+	var req saveRoleRequest
+	if err := c.BodyParser(&req); err != nil {
+		return req, fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+
+	req.Slug = strings.TrimSpace(req.Slug)
+	req.Label = strings.TrimSpace(req.Label)
+	req.Capabilities = uniqueStrings(req.Capabilities)
+
+	if req.Label == "" {
+		return req, fiber.NewError(fiber.StatusBadRequest, "name is required")
+	}
+	if !roleSlugPattern.MatchString(req.Slug) {
+		return req, fiber.NewError(fiber.StatusBadRequest, "slug must be lowercase kebab-case")
+	}
+
+	return req, nil
+}
+
+func validateRoleCapabilities(db *gorm.DB, slugs []string) error {
+	if len(slugs) == 0 {
+		return nil
+	}
+
+	var count int64
+	if err := db.Model(&UsersPluginCapability{}).Where("slug IN ?", slugs).Count(&count).Error; err != nil {
+		return err
+	}
+	if count != int64(len(slugs)) {
+		return fiber.NewError(fiber.StatusBadRequest, "one or more capabilities are invalid")
+	}
+
+	return nil
+}
+
+func replaceRoleCapabilities(db *gorm.DB, roleSlug string, capabilities []string) error {
+	if err := db.Unscoped().Where("role_slug = ?", roleSlug).Delete(&UsersPluginRoleCapability{}).Error; err != nil {
+		return err
+	}
+
+	for _, cap := range capabilities {
+		join := UsersPluginRoleCapability{
+			RoleSlug:       roleSlug,
+			CapabilitySlug: cap,
+		}
+		if err := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&join).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func loadRoleResponses(db *gorm.DB) ([]roleResponse, error) {
+	var roles []UsersPluginRole
+	if err := db.Order("label ASC, slug ASC").Find(&roles).Error; err != nil {
+		return nil, err
+	}
+
+	roleCaps, err := loadCapabilitiesByRole(db)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]roleResponse, 0, len(roles))
+	for _, role := range roles {
+		result = append(result, roleResponse{
+			Slug:         role.Slug,
+			Label:        role.Label,
+			Capabilities: roleCaps[role.Slug],
+		})
+	}
+
+	return result, nil
+}
+
+func loadRoleResponse(db *gorm.DB, slug string) (roleResponse, error) {
+	var role UsersPluginRole
+	if err := db.First(&role, "slug = ?", slug).Error; err != nil {
+		return roleResponse{}, err
+	}
+
+	roleCaps, err := loadCapabilitiesByRole(db)
+	if err != nil {
+		return roleResponse{}, err
+	}
+
+	return roleResponse{
+		Slug:         role.Slug,
+		Label:        role.Label,
+		Capabilities: roleCaps[role.Slug],
+	}, nil
+}
+
+func loadCapabilitiesByRole(db *gorm.DB) (map[string][]string, error) {
+	var roleCaps []UsersPluginRoleCapability
+	if err := db.Order("capability_slug ASC").Find(&roleCaps).Error; err != nil {
+		return nil, err
+	}
+
+	result := make(map[string][]string)
+	for _, rc := range roleCaps {
+		result[rc.RoleSlug] = append(result[rc.RoleSlug], rc.CapabilitySlug)
+	}
+	for roleSlug := range result {
+		sort.Strings(result[roleSlug])
+	}
+
+	return result, nil
+}
+
+func uniqueStrings(values []string) []string {
+	result := make([]string, 0, len(values))
+	seen := map[string]bool{}
+	for _, value := range values {
+		normalized := strings.TrimSpace(value)
+		if normalized == "" || seen[normalized] {
+			continue
+		}
+		seen[normalized] = true
+		result = append(result, normalized)
+	}
+	sort.Strings(result)
+	return result
 }

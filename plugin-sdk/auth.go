@@ -5,6 +5,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const AuthUserContextKey = "auth_user"
+
 type AuthUser struct {
 	ID          uuid.UUID      `json:"id"`
 	Email       string         `json:"email"`

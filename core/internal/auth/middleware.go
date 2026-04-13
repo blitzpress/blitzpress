@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-const AuthUserKey = "auth_user"
+const AuthUserKey = pluginsdk.AuthUserContextKey
 
 func ExtractToken(c *fiber.Ctx) string {
 	if header := c.Get("Authorization"); strings.HasPrefix(header, "Bearer ") {

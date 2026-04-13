@@ -80,7 +80,7 @@ export interface PageDefinition {
   id: string;
   path: string;
   title: string;
-  component: ComponentLoader;
+  component: ComponentLoader<PageRouteProps>;
 }
 
 export interface WidgetDefinition {
@@ -91,6 +91,10 @@ export interface WidgetDefinition {
 
 export interface RegisteredPage extends PageDefinition {
   pluginId: string;
+}
+
+export interface PageRouteProps {
+  routeParams?: Record<string, string>;
 }
 
 export interface RegisteredWidget extends WidgetDefinition {

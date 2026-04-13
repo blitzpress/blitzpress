@@ -4,16 +4,14 @@ import { runtimeState } from "@blitzpress/plugin-sdk";
 
 import { useAdminRuntime } from "../base/app/AdminRuntimeProvider";
 import NotFoundPage from "../base/pages/NotFoundPage";
-import { normalizePath } from "../base/routes/navigation";
+import { matchPluginPage } from "../base/routes/navigation";
 import PluginPageHost from "./PluginPageHost";
 
 export default function RuntimeRoutePage() {
   const location = useLocation();
   const { loadStatus } = useAdminRuntime();
 
-  const activePage = createMemo(() =>
-    runtimeState.pages.find((page) => normalizePath(page.path) === normalizePath(location.pathname)),
-  );
+  const activePage = createMemo(() => matchPluginPage(location.pathname, runtimeState.pages));
 
   return (
     <Show
@@ -24,7 +22,7 @@ export default function RuntimeRoutePage() {
           : <NotFoundPage />
       }
     >
-      {(page) => <PluginPageHost page={page()} />}
+      {(match) => <PluginPageHost page={match().page} routeParams={match().routeParams} />}
     </Show>
   );
 }

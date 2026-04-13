@@ -66,7 +66,7 @@ func (d *usersAuthDriver) Authenticate(token string) (*pluginsdk.AuthUser, error
 }
 
 func (d *usersAuthDriver) GetLoggedInUser(c *fiber.Ctx) *pluginsdk.AuthUser {
-	user, _ := c.Locals("auth_user").(*pluginsdk.AuthUser)
+	user, _ := c.Locals(pluginsdk.AuthUserContextKey).(*pluginsdk.AuthUser)
 	return user
 }
 

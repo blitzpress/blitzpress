@@ -162,6 +162,64 @@ export function normalizePath(pathname: string): string {
   return normalized.startsWith("/") ? normalized : `/${normalized}`;
 }
 
+export function hasRouteParams(pathname: string): boolean {
+  return normalizePath(pathname).split("/").some((segment) => segment.startsWith(":"));
+}
+
+export function matchPathPattern(pattern: string, pathname: string): Record<string, string> | undefined {
+  const patternSegments = normalizePath(pattern).split("/").filter(Boolean);
+  const pathSegments = normalizePath(pathname).split("/").filter(Boolean);
+
+  if (patternSegments.length !== pathSegments.length) {
+    return undefined;
+  }
+
+  const params: Record<string, string> = {};
+  for (let index = 0; index < patternSegments.length; index += 1) {
+    const patternSegment = patternSegments[index];
+    const pathSegment = pathSegments[index];
+
+    if (patternSegment?.startsWith(":")) {
+      const key = patternSegment.slice(1);
+      if (!key || !pathSegment) {
+        return undefined;
+      }
+      params[key] = decodeURIComponent(pathSegment);
+      continue;
+    }
+
+    if (patternSegment !== pathSegment) {
+      return undefined;
+    }
+  }
+
+  return params;
+}
+
+export function matchPluginPage(
+  pathname: string,
+  pluginPages: RegisteredPage[],
+): { page: RegisteredPage; routeParams: Record<string, string> } | undefined {
+  const normalized = normalizePath(pathname);
+  const exact = pluginPages.find((page) => normalizePath(page.path) === normalized);
+  if (exact) {
+    return { page: exact, routeParams: {} };
+  }
+
+  for (const page of pluginPages) {
+    if (!hasRouteParams(page.path)) {
+      continue;
+    }
+
+    const routeParams = matchPathPattern(page.path, normalized);
+    if (routeParams) {
+      return { page, routeParams };
+    }
+  }
+
+  return undefined;
+}
+
 export function pluginSettingsPath(pluginId: string): string {
   return `/admin/plugins/${encodeURIComponent(pluginId)}/settings`;
 }
@@ -198,9 +256,9 @@ export function getPageTitle(
     return exact;
   }
 
-  const pluginPage = pluginPages.find((page) => normalizePath(page.path) === normalized);
-  if (pluginPage) {
-    return pluginPage.title;
+  const pluginPageMatch = matchPluginPage(normalized, pluginPages);
+  if (pluginPageMatch) {
+    return pluginPageMatch.page.title;
   }
 
   if (normalized.startsWith("/posts/")) {

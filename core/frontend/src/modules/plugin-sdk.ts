@@ -31,6 +31,7 @@ export type {
   FrontendRegistrar,
   PluginSettingsResponse,
   PageDefinition,
+  PageRouteProps,
   SaveSettingsHandler,
   PluginFrontendDescriptor,
   PluginListResponse,

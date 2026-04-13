@@ -1,0 +1,118 @@
+.role-capabilities-masonry {
+  column-count: 1;
+  column-gap: 1rem;
+}
+
+.role-capabilities-card,
+.role-capabilities-skeleton {
+  display: block;
+  margin-bottom: 1rem;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+}
+
+.role-group-toggle,
+.role-capability-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.role-group-toggle {
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0;
+}
+
+.role-capability-option {
+  width: 100%;
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  transition: background-color 200ms ease, box-shadow 200ms ease;
+}
+
+.role-group-toggle:focus-visible,
+.role-capability-option:focus-visible {
+  outline: none;
+}
+
+.role-group-toggle:focus-visible .role-checkbox,
+.role-capability-option:focus-visible .role-checkbox {
+  box-shadow: 0 0 0 4px rgb(99 102 241 / 0.18);
+}
+
+.role-capability-option:hover {
+  background: rgb(248 250 252);
+}
+
+.role-checkbox {
+  display: inline-flex;
+  height: 1.25rem;
+  width: 1.25rem;
+  flex: 0 0 1.25rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(203 213 225);
+  border-radius: 0.5rem;
+  background: rgb(255 255 255);
+  color: rgb(255 255 255);
+  box-shadow: 0 1px 2px rgb(148 163 184 / 0.14);
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    box-shadow 200ms ease,
+    color 200ms ease;
+}
+
+.role-group-toggle:hover .role-checkbox,
+.role-capability-option:hover .role-checkbox {
+  border-color: rgb(199 210 254);
+  background: rgb(248 250 252);
+}
+
+.role-checkbox.is-on,
+.role-checkbox.is-partial {
+  border-color: rgb(79 70 229);
+  background: rgb(79 70 229);
+}
+
+.role-checkbox.is-partial {
+  background: rgb(99 102 241);
+}
+
+.role-group-toggle:hover .role-checkbox.is-on,
+.role-group-toggle:hover .role-checkbox.is-partial,
+.role-capability-option:hover .role-checkbox.is-on,
+.role-capability-option:hover .role-checkbox.is-partial {
+  border-color: rgb(79 70 229);
+  background: rgb(79 70 229);
+}
+
+.role-group-toggle:hover .role-checkbox.is-partial,
+.role-capability-option:hover .role-checkbox.is-partial {
+  background: rgb(99 102 241);
+}
+
+.role-checkbox-icon {
+  display: block;
+  color: currentColor;
+}
+
+@media (min-width: 768px) {
+  .role-capabilities-masonry {
+    column-count: 2;
+  }
+}
+
+@media (min-width: 1280px) {
+  .role-capabilities-masonry {
+    column-count: 3;
+  }
+}

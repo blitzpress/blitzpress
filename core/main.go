@@ -162,10 +162,10 @@ func newCoreApplication(cfg *config.AppConfig, logger *slog.Logger) (*coreApplic
 
 	protectedAPI := apiRouter.Group("/core", authMW)
 	protectedAPI.Get("/plugins", api.CMSPluginsHandler(registry))
-	protectedAPI.Get("/plugins/all", coreauth.RequireCapability(authRegistry, "manage_plugins"), api.AdminPluginsHandler(registry))
-	protectedAPI.Put("/plugins/:id/enabled", coreauth.RequireCapability(authRegistry, "manage_plugins"), api.AdminPluginToggleHandler(registry, db, newManagedRestartRequester(logger)))
-	protectedAPI.Get("/plugins/:id/settings", coreauth.RequireCapability(authRegistry, "manage_options"), api.PluginSettingsGetHandler(registry, db))
-	protectedAPI.Put("/plugins/:id/settings", coreauth.RequireCapability(authRegistry, "manage_options"), api.PluginSettingsPutHandler(registry, db))
+	protectedAPI.Get("/plugins/all", coreauth.RequireCapability(authRegistry, "plugins.settings"), api.AdminPluginsHandler(registry))
+	protectedAPI.Put("/plugins/:id/enabled", coreauth.RequireCapability(authRegistry, "plugins.settings"), api.AdminPluginToggleHandler(registry, db, newManagedRestartRequester(logger)))
+	protectedAPI.Get("/plugins/:id/settings", coreauth.RequireCapability(authRegistry, "plugins.settings"), api.PluginSettingsGetHandler(registry, db))
+	protectedAPI.Put("/plugins/:id/settings", coreauth.RequireCapability(authRegistry, "plugins.settings"), api.PluginSettingsPutHandler(registry, db))
 
 	registry.MountRoutes(apiRouter, app, authMW)
 

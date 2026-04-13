@@ -1,3 +1,5 @@
+import "./styles.css";
+
 import { registerPlugin, type HttpClient } from "@blitzpress/plugin-sdk";
 
 const tokenStorageKey = "bp_auth_token";
@@ -32,6 +34,20 @@ registerPlugin(
       path: "/users",
       title: "Users",
       component: () => import("./pages/UsersPage"),
+    });
+
+    registrar.pages.add({
+      id: "users-plugin.roles",
+      path: "/roles",
+      title: "Roles",
+      component: () => import("./pages/RolesPage"),
+    });
+
+    registrar.pages.add({
+      id: "users-plugin.role",
+      path: "/roles/:id",
+      title: "Role",
+      component: () => import("./pages/RoleEditorPage"),
     });
   },
 );

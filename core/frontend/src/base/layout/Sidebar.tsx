@@ -3,7 +3,7 @@ import { For, Show, createMemo, type Component } from "solid-js";
 
 import { useAdminRuntime } from "../app/AdminRuntimeProvider";
 import Icon from "../icons/Icon";
-import { isActivePath, navGroups, normalizePath, pluginSettingsPath } from "../routes/navigation";
+import { hasRouteParams, isActivePath, navGroups, normalizePath, pluginSettingsPath } from "../routes/navigation";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -15,11 +15,13 @@ const Sidebar: Component<SidebarProps> = (props) => {
   const { discoveredPlugins, pluginPages } = useAdminRuntime();
 
   const dynamicPluginPages = createMemo(() =>
-    pluginPages().map((page) => ({
-      icon: "external-link",
-      label: page.title,
-      path: page.path,
-    })),
+    pluginPages()
+      .filter((page) => !hasRouteParams(page.path))
+      .map((page) => ({
+        icon: "external-link",
+        label: page.title,
+        path: page.path,
+      })),
   );
 
   const dynamicPluginSettings = createMemo(() =>
@@ -102,18 +104,18 @@ const Sidebar: Component<SidebarProps> = (props) => {
                 <A
                   href={item.path}
                   class={`group relative mb-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 ${
-                    currentPath() === normalizePath(item.path)
+                    isActivePath(currentPath(), item.path)
                       ? "bg-white/[0.08] font-medium text-white"
                       : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
                   } ${props.collapsed ? "justify-center" : ""}`}
                 >
-                  <Show when={currentPath() === normalizePath(item.path)}>
+                  <Show when={isActivePath(currentPath(), item.path)}>
                     <div class="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-indigo-400" />
                   </Show>
                   <Icon
                     name={item.icon}
                     size={18}
-                    class={currentPath() === normalizePath(item.path) ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300"}
+                    class={isActivePath(currentPath(), item.path) ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300"}
                   />
                   <Show when={!props.collapsed}>
                     <span class="truncate text-[13px]">{item.label}</span>
