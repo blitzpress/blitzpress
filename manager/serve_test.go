@@ -88,15 +88,15 @@ done
 	waitForServeManagerExit(t, errCh)
 }
 
-func TestRunServeLoopRestartsAfterPluginArtifactChange(t *testing.T) {
+func TestRunServeLoopRestartsAfterPluginManifestChange(t *testing.T) {
 	repoRoot := t.TempDir()
 	pluginsDir := filepath.Join(repoRoot, "build", "plugins", "example-plugin")
-	pluginBinaryPath := filepath.Join(pluginsDir, "plugin.so")
+	pluginManifestPath := filepath.Join(pluginsDir, "plugin.json")
 	if err := os.MkdirAll(pluginsDir, 0o755); err != nil {
 		t.Fatalf("MkdirAll(%q) error = %v", pluginsDir, err)
 	}
-	if err := os.WriteFile(pluginBinaryPath, []byte("v1"), 0o644); err != nil {
-		t.Fatalf("WriteFile(%q) error = %v", pluginBinaryPath, err)
+	if err := os.WriteFile(pluginManifestPath, []byte(`{"id":"example-plugin","name":"Example","version":"0.1.0"}`), 0o644); err != nil {
+		t.Fatalf("WriteFile(%q) error = %v", pluginManifestPath, err)
 	}
 
 	countFile := filepath.Join(repoRoot, "watch-count.txt")
@@ -133,8 +133,8 @@ done
 	waitForServeCountAtLeast(t, countFile, 1, 2*time.Second)
 	time.Sleep(80 * time.Millisecond)
 
-	if err := os.WriteFile(pluginBinaryPath, []byte("updated-plugin-binary"), 0o644); err != nil {
-		t.Fatalf("WriteFile(%q) error = %v", pluginBinaryPath, err)
+	if err := os.WriteFile(pluginManifestPath, []byte(`{"id":"example-plugin","name":"Example","version":"0.2.0"}`), 0o644); err != nil {
+		t.Fatalf("WriteFile(%q) error = %v", pluginManifestPath, err)
 	}
 
 	waitForServeCountAtLeast(t, countFile, 2, 2*time.Second)

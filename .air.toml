@@ -4,7 +4,7 @@ tmp_dir = "tmp/core"
 [build]
   cmd = "./scripts/build-core.sh"
   bin = "build/blitzpress"
-  entrypoint = ["go", "run", "./manager", "serve", "--core", "./build/blitzpress", "--plugins-dir", "./build/plugins"]
+  entrypoint = ["go", "run", "./manager", "serve", "--core", "./build/blitzpress", "--plugins-dir", "./build/plugins", "--watch-plugins"]
   include_ext = ["go", "html", "js", "jsx", "ts", "tsx", "css", "so"]
   exclude_dir = ["core/frontend/node_modules", "core/frontend/packages/vite-plugin/node_modules", "core/frontend/dist", "core/static", "tmp"]
   include_dir = ["core", "manager"]

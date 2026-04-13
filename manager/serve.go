@@ -102,9 +102,9 @@ func newServeCommand(cwd string, stdout, stderr io.Writer) *cobra.Command {
 
 	cmd.Flags().StringVar(&corePathFlag, "core", "./build/blitzpress", "Path to the BlitzPress core binary")
 	cmd.Flags().StringVar(&pluginsDirFlag, "plugins-dir", "./build/plugins", "Directory containing built plugin artifacts")
-	cmd.Flags().BoolVar(&watchPlugins, "watch-plugins", true, "Restart the core when built plugin shared objects change")
-	cmd.Flags().DurationVar(&watchInterval, "watch-interval", defaultWatchInterval, "Polling interval for built plugin artifacts")
-	cmd.Flags().DurationVar(&watchDebounce, "watch-debounce", defaultWatchDebounce, "How long plugin artifact changes must stay stable before restart")
+	cmd.Flags().BoolVar(&watchPlugins, "watch-plugins", true, "Restart the core when built plugin manifests change")
+	cmd.Flags().DurationVar(&watchInterval, "watch-interval", defaultWatchInterval, "Polling interval for built plugin manifests")
+	cmd.Flags().DurationVar(&watchDebounce, "watch-debounce", defaultWatchDebounce, "How long plugin manifest changes must stay stable before restart")
 	cmd.Flags().DurationVar(&stopTimeout, "stop-timeout", defaultStopTimeout, "How long to wait for graceful core shutdown before force kill")
 	cmd.Flags().DurationVar(&restartDelay, "restart-delay", defaultRestartDelay, "Initial delay before restarting after an unexpected core exit")
 	cmd.Flags().DurationVar(&maxRestartDelay, "max-restart-delay", defaultMaxRestartDelay, "Maximum delay between crash restarts")
@@ -207,7 +207,7 @@ func runServeLoop(ctx context.Context, restartSignals <-chan os.Signal, cfg serv
 								watchTicker.Stop()
 							}
 
-							logManager(stderr, "plugin artifact update settled; restarting core")
+							logManager(stderr, "plugin manifest update settled; restarting core")
 							if err := stopManagedCore(child, cfg.StopTimeout); err != nil {
 								return err
 							}
@@ -228,7 +228,7 @@ func runServeLoop(ctx context.Context, restartSignals <-chan os.Signal, cfg serv
 					pendingRestart = true
 					pendingSnapshot = clonePluginSnapshot(nextSnapshot)
 					pendingDeadline = time.Now().Add(cfg.WatchDebounce)
-					logManager(stderr, "detected plugin artifact change; waiting %s before restart", cfg.WatchDebounce)
+					logManager(stderr, "detected plugin manifest change; waiting %s before restart", cfg.WatchDebounce)
 				}
 			case err := <-child.waitCh:
 				if watchTicker != nil {
@@ -401,14 +401,14 @@ func scanPluginArtifacts(pluginsDir string) (map[string]pluginArtifactStamp, err
 			continue
 		}
 
-		artifactPath := filepath.Join(pluginsDir, entry.Name(), "plugin.so")
+		artifactPath := filepath.Join(pluginsDir, entry.Name(), "plugin.json")
 		info, err := os.Stat(artifactPath)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				continue
 			}
 
-			return nil, fmt.Errorf("inspect plugin artifact %s: %w", artifactPath, err)
+			return nil, fmt.Errorf("inspect plugin manifest %s: %w", artifactPath, err)
 		}
 
 		if info.IsDir() {
@@ -426,6 +426,10 @@ func scanPluginArtifacts(pluginsDir string) (map[string]pluginArtifactStamp, err
 }
 
 func hasRelevantPluginUpdate(previous, current map[string]pluginArtifactStamp) bool {
+	if len(previous) != len(current) {
+		return true
+	}
+
 	for pluginID, currentStamp := range current {
 		previousStamp, ok := previous[pluginID]
 		if !ok {
