@@ -3,7 +3,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build:ssr": "vite build",
+    "build": "npm run build:ssr && node ./scripts/export-static.mjs",
     "start": "vite start",
     "preview": "vite preview"
   },
